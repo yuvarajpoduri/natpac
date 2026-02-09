@@ -8,6 +8,5 @@ Achievements for this week:
 5. Developed the React frontend foundation with a centralized Authentication Context to manage user sessions.
 6. Designed and implemented premium-looking Login and Signup pages using modern CSS practices (glassmorphism, radial gradients, and smooth animations).
 7. Established client-side routing with protected dashboard access to ensure data security.
-8. Configured the project to follow the requested coding style: humanized variable names and zero comments within the source code.
 
 Next week's focus: AI Microservice setup and integration.
