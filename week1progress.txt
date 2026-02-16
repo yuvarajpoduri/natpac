@@ -1,13 +1,10 @@
 Week 1 Progress Report - NATPAC Travel Data Collection App
 
 Achievements for this week:
-1. Initialized the project structure with separate directories for Backend (Node/Express), Frontend (React/Vite), and AI Service (Python/Flask).
+1. Initialized the project structure with separate directories for Backend (Node/Express), Frontend (React/Vite), and AI Service (Python).
 2. Set up the Node.js backend environment with essential dependencies including Mongoose for database management and JWT for secure authentication.
 3. Implemented a robust User model with humanized fields to track account information and roles (Citizen vs Scientist).
 4. Created a complete authentication system on the backend with registration and login endpoints.
 5. Developed the React frontend foundation with a centralized Authentication Context to manage user sessions.
 6. Designed and implemented premium-looking Login and Signup pages using modern CSS practices (glassmorphism, radial gradients, and smooth animations).
 7. Established client-side routing with protected dashboard access to ensure data security.
-8. Configured the project to follow the requested coding style: humanized variable names and zero comments within the source code.
-
-Next week's focus: AI Microservice setup and integration.
