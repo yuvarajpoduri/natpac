@@ -1,0 +1,5 @@
+node_modules
+.DS_Store
+.env
+project_overview.txt
+project_overwite.txt

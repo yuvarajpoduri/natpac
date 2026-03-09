@@ -8,14 +8,16 @@ const SignupPage = () => {
   const [password, setPassword] = useState('');
   const [userRole, setUserRole] = useState('citizen');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { registerUser } = useAuthentication();
   const navigate = useNavigate();
 
   const handleSignupSubmission = async (event) => {
     event.preventDefault();
     setErrorMessage('');
-    
+    setIsSubmitting(true);
     const signupResult = await registerUser(fullName, emailAddress, password, userRole);
+    setIsSubmitting(false);
     if (signupResult.success) {
       navigate('/dashboard');
     } else {
@@ -24,70 +26,63 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1 className="auth-title">NATPAC Join</h1>
-          <p className="auth-subtitle">Contribute to Kerala's transport future.</p>
+    <div className="auth-page">
+      <div className="auth-box">
+        <div className="auth-logo">
+          <div className="auth-logo-mark">N</div>
+          <span className="auth-logo-text">NATPAC Travel</span>
         </div>
 
-        {errorMessage && (
-          <div style={{ color: 'var(--danger-red)', marginBottom: '1rem', textAlign: 'center', fontSize: '0.875rem' }}>
-            {errorMessage}
-          </div>
-        )}
+        <h1 className="auth-heading">Create account</h1>
+        <p className="auth-subheading">Contribute to Kerala's transport future.</p>
+
+        {errorMessage && <div className="auth-error">{errorMessage}</div>}
 
         <form onSubmit={handleSignupSubmission}>
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input 
-              type="text" 
-              className="form-input" 
+          <div className="field">
+            <label>Full Name</label>
+            <input
+              type="text"
               placeholder="John Doe"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              required 
+              required
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <input 
-              type="email" 
-              className="form-input" 
-              placeholder="name@example.com"
+          <div className="field">
+            <label>Email Address</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
               value={emailAddress}
               onChange={(e) => setEmailAddress(e.target.value)}
-              required 
+              required
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input 
-              type="password" 
-              className="form-input" 
+          <div className="field">
+            <label>Password</label>
+            <input
+              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required 
+              required
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Account Type</label>
-            <select 
-              className="form-input"
-              value={userRole}
-              onChange={(e) => setUserRole(e.target.value)}
-            >
+          <div className="field">
+            <label>Account Type</label>
+            <select value={userRole} onChange={(e) => setUserRole(e.target.value)}>
               <option value="citizen">Citizen User</option>
               <option value="scientist">NATPAC Scientist</option>
             </select>
           </div>
-          <button type="submit" className="auth-button">Create Account</button>
+          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create Account'}
+          </button>
         </form>
 
-        <div className="auth-switch">
-          Already have an account? 
-          <Link to="/login" className="auth-link">Login here</Link>
+        <div className="auth-footer">
+          Already have an account?<Link to="/login">Sign in</Link>
         </div>
       </div>
     </div>

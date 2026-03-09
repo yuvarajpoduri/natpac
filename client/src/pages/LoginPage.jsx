@@ -6,14 +6,16 @@ const LoginPage = () => {
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { loginUser } = useAuthentication();
   const navigate = useNavigate();
 
   const handleLoginSubmission = async (event) => {
     event.preventDefault();
     setErrorMessage('');
-    
+    setIsSubmitting(true);
     const loginResult = await loginUser(emailAddress, password);
+    setIsSubmitting(false);
     if (loginResult.success) {
       navigate('/dashboard');
     } else {
@@ -22,48 +24,46 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1 className="auth-title">NATPAC Travel</h1>
-          <p className="auth-subtitle">Welcome back! Please login to your account.</p>
+    <div className="auth-page">
+      <div className="auth-box">
+        <div className="auth-logo">
+          <div className="auth-logo-mark">N</div>
+          <span className="auth-logo-text">NATPAC Travel</span>
         </div>
 
-        {errorMessage && (
-          <div style={{ color: 'var(--danger-red)', marginBottom: '1rem', textAlign: 'center', fontSize: '0.875rem' }}>
-            {errorMessage}
-          </div>
-        )}
+        <h1 className="auth-heading">Welcome back</h1>
+        <p className="auth-subheading">Sign in to your account to continue.</p>
+
+        {errorMessage && <div className="auth-error">{errorMessage}</div>}
 
         <form onSubmit={handleLoginSubmission}>
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <input 
-              type="email" 
-              className="form-input" 
-              placeholder="name@example.com"
+          <div className="field">
+            <label>Email Address</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
               value={emailAddress}
               onChange={(e) => setEmailAddress(e.target.value)}
-              required 
+              required
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input 
-              type="password" 
-              className="form-input" 
+          <div className="field">
+            <label>Password</label>
+            <input
+              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required 
+              required
             />
           </div>
-          <button type="submit" className="auth-button">Sign In</button>
+          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
+          </button>
         </form>
 
-        <div className="auth-switch">
-          Don't have an account? 
-          <Link to="/signup" className="auth-link">Create one</Link>
+        <div className="auth-footer">
+          Don't have an account?<Link to="/signup">Create one</Link>
         </div>
       </div>
     </div>
