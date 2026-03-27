@@ -5,6 +5,7 @@ const connectToDatabase = require('./config/database');
 const authenticationRoutes = require('./routes/authenticationRoutes');
 const tripRoutes = require('./routes/tripRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const exportRoutes = require('./routes/exportRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/api/auth', authenticationRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/export', exportRoutes);
 
 app.get('/', (request, response) => {
   response.send('NATPAC Travel Data Collection API is running...');

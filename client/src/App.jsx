@@ -6,7 +6,9 @@ import SignupPage from './pages/SignupPage';
 import TravelDiary from './pages/TravelDiary';
 import ScientistDashboard from './pages/ScientistDashboard';
 import TripSimulator from './pages/TripSimulator';
-import { LayoutDashboard, BookOpen, Activity, LogOut, Menu, X } from 'lucide-react';
+import AdvancedAnalytics from './pages/AdvancedAnalytics';
+import DataExport from './pages/DataExport';
+import { LayoutDashboard, BookOpen, Activity, LogOut, Menu, BarChart3, Download } from 'lucide-react';
 
 const ProtectedRoute = ({ children }) => {
   const { currentUser, isAuthenticationLoading } = useAuthentication();
@@ -34,6 +36,13 @@ const SidebarContent = ({ currentUser, logoutUser, onClose }) => {
     navItems.push(
       { to: '/diary', icon: BookOpen, label: 'Travel Diary' },
       { to: '/simulate', icon: Activity, label: 'Trip Simulator' }
+    );
+  }
+
+  if (currentUser.userRole === 'scientist') {
+    navItems.push(
+      { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+      { to: '/export', icon: Download, label: 'Data Export' }
     );
   }
 
@@ -93,7 +102,9 @@ const MainLayout = ({ children }) => {
   const pageTitles = {
     '/dashboard': 'Dashboard',
     '/diary': 'Travel Diary',
-    '/simulate': 'Trip Simulator'
+    '/simulate': 'Trip Simulator',
+    '/analytics': 'Analytics',
+    '/export': 'Data Export'
   };
 
   return (
@@ -155,6 +166,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <MainLayout><TripSimulator /></MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <MainLayout><AdvancedAnalytics /></MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/export"
+            element={
+              <ProtectedRoute>
+                <MainLayout><DataExport /></MainLayout>
               </ProtectedRoute>
             }
           />
