@@ -116,14 +116,15 @@ const ScientistDashboard = () => {
           </div>
           <div style={{ height: '260px' }}>
             <MapContainer
-              center={[10.0, 76.5]}
+              center={[10.5, 76.5]}
               zoom={7}
               style={{ width: '100%', height: '100%' }}
-              zoomControl={false}
-              scrollWheelZoom={false}
+              zoomControl={true}
+              scrollWheelZoom={true}
+              maxBounds={[[8.15, 74.85], [12.85, 77.45]]}
             >
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               />
               {tripNodes.map((node, i) => (
@@ -131,7 +132,7 @@ const ScientistDashboard = () => {
                   key={i}
                   center={[node.lat, node.lng]}
                   radius={node.radius}
-                  pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.45, weight: 1.5 }}
+                  pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.45, weight: 1.5 }}
                 >
                   <Popup>{node.city} — {node.trips.toLocaleString()} trips</Popup>
                 </CircleMarker>

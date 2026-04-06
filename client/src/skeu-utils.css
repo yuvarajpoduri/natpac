@@ -1,0 +1,374 @@
+/*
+ * skeu-utils.css
+ * Skeuomorphic Utility Classes — NATPAC
+ * Violet-Indigo Light Theme
+ *
+ * Imported automatically via main.jsx after index.css.
+ * These classes can be applied to any element to get
+ * consistent skeuomorphic surfaces/buttons/inputs.
+ */
+
+
+/* ═══════════════════════════════════════════════════════════════
+   RAISED CARD  ·  physical-lift surface
+   ═══════════════════════════════════════════════════════════════ */
+
+.card-raised {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.375rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.25s cubic-bezier(0.4,0,0.2,1), transform 0.2s ease;
+}
+
+.card-raised:hover {
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   INSET WELL  ·  recessed / pressed surface
+   ═══════════════════════════════════════════════════════════════ */
+
+.well-inset {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-inset);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ENGRAVED INPUT  ·  inset form field
+   ═══════════════════════════════════════════════════════════════ */
+
+.input-skeu {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.875rem;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  outline: none;
+  box-shadow: var(--shadow-inset);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-skeu::placeholder { color: var(--text-muted); }
+
+.input-skeu:focus {
+  border-color: var(--border-focus);
+  background: #ffffff;
+  box-shadow:
+    var(--shadow-inset),
+    0 0 0 3px rgba(15,118,110,0.15);
+  outline: none;
+}
+
+.input-skeu:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--bg-elevated);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON — BRAND (Indigo dome)
+   ═══════════════════════════════════════════════════════════════ */
+
+.btn-skeu-brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--brand);
+  border: 1px solid var(--brand-dark);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+}
+
+.btn-skeu-brand:hover {
+  filter: brightness(1.09);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-btn);
+  text-decoration: none;
+  color: #fff;
+}
+
+.btn-skeu-brand:active {
+  transform: translateY(1px);
+  filter: brightness(0.95);
+  box-shadow: var(--shadow-btn-inset);
+}
+
+.btn-skeu-brand:disabled {
+  opacity: 0.50;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON — SUCCESS (Emerald dome)
+   ═══════════════════════════════════════════════════════════════ */
+
+.btn-skeu-success {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--success);
+  border: 1px solid var(--success-dark);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.btn-skeu-success:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-btn);
+  text-decoration: none;
+  color: #fff;
+}
+
+.btn-skeu-success:active {
+  transform: translateY(1px);
+  filter: brightness(0.95);
+  box-shadow: var(--shadow-btn-inset);
+}
+
+.btn-skeu-success:disabled {
+  opacity: 0.50;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON — DANGER (Ruby dome)
+   ═══════════════════════════════════════════════════════════════ */
+
+.btn-skeu-danger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--danger);
+  border: 1px solid var(--danger-dark);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.btn-skeu-danger:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-btn);
+  text-decoration: none;
+  color: #fff;
+}
+
+.btn-skeu-danger:active {
+  transform: translateY(1px);
+  filter: brightness(0.95);
+  box-shadow: var(--shadow-btn-inset);
+}
+
+.btn-skeu-danger:disabled {
+  opacity: 0.50;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON — SECONDARY (Light dome)
+   ═══════════════════════════════════════════════════════════════ */
+
+.btn-skeu-secondary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(180deg, #fefeff 0%, #ede8f6 100%);
+  border: 1px solid var(--border);
+  border-top-color: rgba(255,255,255,0.92);
+  border-bottom-width: 2px;
+  border-bottom-color: rgba(120,100,200,0.24);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    inset 0 -1px 0 rgba(0,0,0,0.06),
+    0 1px 3px rgba(80,60,140,0.12),
+    0 3px 8px rgba(80,60,140,0.08);
+  transition: filter 0.15s ease, transform 0.1s ease, color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.btn-skeu-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: rgba(255,255,255,0.50);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.btn-skeu-secondary:hover {
+  color: var(--brand);
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    inset 0 -1px 0 rgba(0,0,0,0.06),
+    0 2px 6px rgba(80,60,140,0.14),
+    0 6px 16px rgba(80,60,140,0.10);
+  text-decoration: none;
+}
+
+.btn-skeu-secondary:active {
+  transform: translateY(1px);
+  filter: brightness(0.97);
+  box-shadow:
+    inset 0 2px 4px rgba(60,40,120,0.14),
+    inset 0 1px 2px rgba(60,40,120,0.08);
+}
+
+.btn-skeu-secondary:disabled {
+  opacity: 0.50;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SURFACE SHEEN HELPER
+   ═══════════════════════════════════════════════════════════════ */
+
+.has-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.has-sheen > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   STAT CARD ACCENT VARIANTS
+   Coloured left stripe on stat cards
+   ═══════════════════════════════════════════════════════════════ */
+
+.card-accent-brand  { border-left: 3px solid var(--brand); }
+.card-accent-success { border-left: 3px solid var(--success); }
+.card-accent-danger  { border-left: 3px solid var(--danger); }
+.card-accent-warning { border-left: 3px solid var(--warning); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   INFO BOX  ·  coloured alert / banner
+   ═══════════════════════════════════════════════════════════════ */
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-card);
+}
+
+.info-box-brand {
+  background: var(--brand-tint);
+  border: 1px solid rgba(99,102,241,0.18);
+  border-top-color: rgba(255,255,255,0.75);
+  color: var(--brand-mid);
+}
+
+.info-box-success {
+  background: var(--success-dim);
+  border: 1px solid rgba(5,150,105,0.18);
+  border-top-color: rgba(255,255,255,0.75);
+  color: var(--success-dark);
+}
+
+.info-box-warning {
+  background: var(--warning-dim);
+  border: 1px solid rgba(180,83,9,0.18);
+  border-top-color: rgba(255,255,255,0.75);
+  color: var(--warning-dark);
+}
+
+.info-box-danger {
+  background: var(--danger-dim);
+  border: 1px solid rgba(220,38,38,0.18);
+  border-top-color: rgba(255,255,255,0.75);
+  color: var(--danger-dark);
+}

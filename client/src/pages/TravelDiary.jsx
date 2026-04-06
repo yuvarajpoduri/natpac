@@ -162,11 +162,12 @@ const TravelDiary = () => {
                     [selectedTrip.destinationCoordinates.latitude, selectedTrip.destinationCoordinates.longitude],
                   ]}
                   style={{ width: '100%', height: '100%' }}
-                  zoomControl={false}
-                  scrollWheelZoom={false}
+                  zoomControl={true}
+                  scrollWheelZoom={true}
+                  maxBounds={[[8.15, 74.85], [12.85, 77.45]]}
                 >
                   <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                     attribution='&copy; CARTO'
                   />
                   <CircleMarker
@@ -184,7 +185,7 @@ const TravelDiary = () => {
                       [selectedTrip.originCoordinates.latitude, selectedTrip.originCoordinates.longitude],
                       [selectedTrip.destinationCoordinates.latitude, selectedTrip.destinationCoordinates.longitude],
                     ]}
-                    pathOptions={{ color: '#3b82f6', weight: 2, dashArray: '6 10' }}
+                    pathOptions={{ color: '#6366f1', weight: 2, dashArray: '6 10' }}
                   />
                 </MapContainer>
               </div>

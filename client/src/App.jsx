@@ -8,7 +8,10 @@ import ScientistDashboard from './pages/ScientistDashboard';
 import TripSimulator from './pages/TripSimulator';
 import AdvancedAnalytics from './pages/AdvancedAnalytics';
 import DataExport from './pages/DataExport';
-import { LayoutDashboard, BookOpen, Activity, LogOut, Menu, BarChart3, Download } from 'lucide-react';
+import SystemHealth from './pages/SystemHealth';
+import ProfilePage from './pages/ProfilePage';
+import AboutPage from './pages/AboutPage';
+import { LayoutDashboard, BookOpen, Activity, LogOut, Menu, BarChart3, Download, Server, UserCircle, Info } from 'lucide-react';
 
 const ProtectedRoute = ({ children }) => {
   const { currentUser, isAuthenticationLoading } = useAuthentication();
@@ -42,9 +45,15 @@ const SidebarContent = ({ currentUser, logoutUser, onClose }) => {
   if (currentUser.userRole === 'scientist') {
     navItems.push(
       { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-      { to: '/export', icon: Download, label: 'Data Export' }
+      { to: '/export', icon: Download, label: 'Data Export' },
+      { to: '/system', icon: Server, label: 'System Monitor' }
     );
   }
+
+  navItems.push(
+    { to: '/profile', icon: UserCircle, label: 'My Profile' },
+    { to: '/about', icon: Info, label: 'About' }
+  );
 
   const initials = currentUser.fullName
     .split(' ')
@@ -104,7 +113,10 @@ const MainLayout = ({ children }) => {
     '/diary': 'Travel Diary',
     '/simulate': 'Trip Simulator',
     '/analytics': 'Analytics',
-    '/export': 'Data Export'
+    '/export': 'Data Export',
+    '/system': 'System Monitor',
+    '/profile': 'My Profile',
+    '/about': 'About'
   };
 
   return (
@@ -145,46 +157,14 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <MainLayout><ScientistDashboard /></MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/diary"
-            element={
-              <ProtectedRoute>
-                <MainLayout><TravelDiary /></MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/simulate"
-            element={
-              <ProtectedRoute>
-                <MainLayout><TripSimulator /></MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <MainLayout><AdvancedAnalytics /></MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/export"
-            element={
-              <ProtectedRoute>
-                <MainLayout><DataExport /></MainLayout>
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<ProtectedRoute><MainLayout><ScientistDashboard /></MainLayout></ProtectedRoute>} />
+          <Route path="/diary" element={<ProtectedRoute><MainLayout><TravelDiary /></MainLayout></ProtectedRoute>} />
+          <Route path="/simulate" element={<ProtectedRoute><MainLayout><TripSimulator /></MainLayout></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><MainLayout><AdvancedAnalytics /></MainLayout></ProtectedRoute>} />
+          <Route path="/export" element={<ProtectedRoute><MainLayout><DataExport /></MainLayout></ProtectedRoute>} />
+          <Route path="/system" element={<ProtectedRoute><MainLayout><SystemHealth /></MainLayout></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><MainLayout><ProfilePage /></MainLayout></ProtectedRoute>} />
+          <Route path="/about" element={<ProtectedRoute><MainLayout><AboutPage /></MainLayout></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </Router>
