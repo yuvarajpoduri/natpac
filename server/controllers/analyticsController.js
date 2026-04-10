@@ -36,40 +36,36 @@ const getDashboardAnalytics = async (request, response) => {
 
     // If no data, return empty array for frontend to handle
     
-    // Fetch all trip coordinates to plot real locations on the map
     const trips = await Trip.find({ 
       'originCoordinates.latitude': { $exists: true } 
     }).select('originCoordinates');
 
     // Group close coordinates into city nodes to simulate density (radius + trips count)
-    // For simplicity of no-dummy-data, every route adds 1 "trip" point to the exact lat,lng.
-    const rawTripNodes = trips.map(t => ({
-      lat: t.originCoordinates.latitude,
-      lng: t.originCoordinates.longitude,
-    }));
-
-    // Simple grouping by closest 0.05 lat/lng threshold
+    // Using simple coordinate rounding as a grid-based spatial cluster
     let groupedNodes = [];
-    rawTripNodes.forEach(trip => {
-      let found = groupedNodes.find(node => 
-        Math.abs(node.lat - trip.lat) < 0.05 && 
-        Math.abs(node.lng - trip.lng) < 0.05
-      );
+    trips.forEach(t => {
+      const lat = parseFloat(t.originCoordinates.latitude.toFixed(2));
+      const lng = parseFloat(t.originCoordinates.longitude.toFixed(2));
+      
+      let found = groupedNodes.find(node => node.lat === lat && node.lng === lng);
       if (found) {
         found.trips += 1;
-        found.radius = Math.min(found.radius + 1, 30); // max radius 30
+        found.radius = Math.min(found.radius + 1.5, 35); // max radius 35 for UI scale
       } else {
-        groupedNodes.push({ lat: trip.lat, lng: trip.lng, trips: 1, radius: 8, city: `Location (${trip.lat.toFixed(2)}, ${trip.lng.toFixed(2)})` });
+        groupedNodes.push({ lat, lng, trips: 1, radius: 10, city: `Zone (${lat}, ${lng})` });
       }
     });
 
     response.status(200).json({
-      activeCitizens: totalCitizens,
-      tripsCaptured: totalTrips,
-      aiAccuracy,
-      districtsCovered: groupedNodes.length > 14 ? 14 : groupedNodes.length || 0, // Approx
-      modeSplitData,
-      tripNodes: groupedNodes
+      status: 'success',
+      data: {
+        activeCitizens: totalCitizens,
+        tripsCaptured: totalTrips,
+        aiAccuracy,
+        districtsCovered: groupedNodes.length > 14 ? 14 : groupedNodes.length || 0, // Approx 14 districts in Kerala
+        modeSplitData,
+        tripNodes: groupedNodes
+      }
     });
 
   } catch (error) {

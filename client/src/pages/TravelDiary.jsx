@@ -20,8 +20,10 @@ const TravelDiary = () => {
 
   const fetchUserTripHistory = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/trips/history');
-      setTripHistory(response.data);
+      const response = await axios.get('http://localhost:5000/api/trips/history', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('natpac_token')}` }
+      });
+      setTripHistory(response.data.data);
     } catch {
       console.error('Failed to fetch trip history');
     } finally {
@@ -41,10 +43,11 @@ const TravelDiary = () => {
     try {
       const response = await axios.patch(
         `http://localhost:5000/api/trips/${selectedTrip._id}/validate`,
-        { userValidatedMode: validatedMode, tripPurpose }
+        { userValidatedMode: validatedMode, tripPurpose },
+        { headers: { 'Authorization': `Bearer ${localStorage.getItem('natpac_token')}` } }
       );
       setTripHistory((prev) =>
-        prev.map((trip) => (trip._id === selectedTrip._id ? response.data : trip))
+        prev.map((trip) => (trip._id === selectedTrip._id ? response.data.data : trip))
       );
       setSelectedTrip(null);
     } catch {
@@ -84,7 +87,7 @@ const TravelDiary = () => {
       ) : tripHistory.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <Navigation size={36} style={{ color: 'var(--text-muted)' }} />
+            <Navigation size={36} style={{ color: '#888888' }} />
             <h3>No trips recorded yet</h3>
             <p>Use the Trip Simulator to create test trips, or trips will appear automatically as you move across Kerala.</p>
           </div>
@@ -121,9 +124,9 @@ const TravelDiary = () => {
                     <span className="badge badge-brand">{trip.tripPurpose}</span>
                   )}
                   {!trip.isTripValidated && (
-                    <span className="badge badge-warning">Needs Validation</span>
+                    <span className="badge badge-info">Needs Validation</span>
                   )}
-                  <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#888888' }}>
                     {formatDate(trip.tripRecordCreatedAt)}
                   </span>
                 </div>
@@ -143,7 +146,7 @@ const TravelDiary = () => {
             <div className="modal-header">
               <span className="modal-title">Validate Trip</span>
               <button className="modal-close" onClick={() => setSelectedTrip(null)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
@@ -173,19 +176,19 @@ const TravelDiary = () => {
                   <CircleMarker
                     center={[selectedTrip.originCoordinates.latitude, selectedTrip.originCoordinates.longitude]}
                     radius={6}
-                    pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.9 }}
+                    pathOptions={{ color: '#F5F230', fillColor: '#F5F230', fillOpacity: 0.9 }}
                   />
                   <CircleMarker
                     center={[selectedTrip.destinationCoordinates.latitude, selectedTrip.destinationCoordinates.longitude]}
                     radius={6}
-                    pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.9 }}
+                    pathOptions={{ color: '#5BCAF5', fillColor: '#5BCAF5', fillOpacity: 0.9 }}
                   />
                   <Polyline
                     positions={[
                       [selectedTrip.originCoordinates.latitude, selectedTrip.originCoordinates.longitude],
                       [selectedTrip.destinationCoordinates.latitude, selectedTrip.destinationCoordinates.longitude],
                     ]}
-                    pathOptions={{ color: '#6366f1', weight: 2, dashArray: '6 10' }}
+                    pathOptions={{ color: '#111111', weight: 2, dashArray: '6 10' }}
                   />
                 </MapContainer>
               </div>

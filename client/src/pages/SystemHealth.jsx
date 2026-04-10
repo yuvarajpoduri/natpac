@@ -23,8 +23,8 @@ const SystemHealth = () => {
         axios.get('http://localhost:5000/api/admin/health', authHeaders),
         axios.get('http://localhost:5000/api/admin/users', authHeaders)
       ]);
-      setHealthData(healthResponse.data);
-      setUsersData(usersResponse.data);
+      setHealthData(healthResponse.data.data);
+      setUsersData(usersResponse.data.data);
       setLastRefreshed(new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Failed to fetch system data:', error);
@@ -46,7 +46,7 @@ const SystemHealth = () => {
   if (isLoading) {
     return (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div className="loading-pulse" style={{ color: 'var(--text-secondary)' }}>Running diagnostics...</div>
+        <div className="loading-pulse" style={{ color: '#666666' }}>Running diagnostics...</div>
       </div>
     );
   }
@@ -63,6 +63,7 @@ const SystemHealth = () => {
         </button>
       </div>
 
+      {/* Tab Switcher */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         {[
           { key: 'health', label: 'System Health' },
@@ -72,7 +73,7 @@ const SystemHealth = () => {
             key={tab.key}
             className={activeTab === tab.key ? 'btn-brand' : 'btn-secondary'}
             onClick={() => setActiveTab(tab.key)}
-            style={{ fontSize: '0.8125rem' }}
+            style={{ fontSize: '13px', height: '40px', padding: '0 20px' }}
           >
             {tab.label}
           </button>
@@ -84,23 +85,23 @@ const SystemHealth = () => {
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
             <div className="card">
               <div className="card-label"><Server size={13} /> Server</div>
-              <div className="stat-value" style={{ color: 'var(--success)', fontSize: '1.5rem' }}>Online</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Node {healthData.nodeVersion}</div>
+              <div className="stat-value" style={{ color: '#34D399', fontSize: '24px' }}>Online</div>
+              <div style={{ fontSize: '12px', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Node {healthData.nodeVersion}</div>
             </div>
             <div className="card">
               <div className="card-label"><Clock size={13} /> Uptime</div>
-              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{Math.round(parseInt(healthData.uptime) / 60)}m</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{healthData.uptime}</div>
+              <div className="stat-value" style={{ fontSize: '24px' }}>{Math.round(parseInt(healthData.uptime) / 60)}m</div>
+              <div style={{ fontSize: '12px', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{healthData.uptime}</div>
             </div>
             <div className="card">
               <div className="card-label"><Cpu size={13} /> Memory</div>
-              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{healthData.memoryUsageMB} MB</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Heap usage</div>
+              <div className="stat-value" style={{ fontSize: '24px' }}>{healthData.memoryUsageMB} MB</div>
+              <div style={{ fontSize: '12px', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Heap usage</div>
             </div>
             <div className="card">
               <div className="card-label"><HardDrive size={13} /> Storage</div>
-              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{healthData.database.estimatedStorageKB} KB</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Estimated DB size</div>
+              <div className="stat-value" style={{ fontSize: '24px' }}>{healthData.database.estimatedStorageKB} KB</div>
+              <div style={{ fontSize: '12px', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Estimated DB size</div>
             </div>
           </div>
 
@@ -108,28 +109,29 @@ const SystemHealth = () => {
             <div className="card">
               <div className="card-label" style={{ marginBottom: '1rem' }}><Users size={13} /> User Breakdown</div>
               <div className="progress-row">
-                <div className="progress-label"><span>Citizens</span><span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{healthData.users.citizens}</span></div>
+                <div className="progress-label"><span>Citizens</span><span style={{ color: '#111111', fontWeight: 700 }}>{healthData.users.citizens}</span></div>
                 <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.users.total > 0 ? (healthData.users.citizens / healthData.users.total) * 100 : 0}%` }} /></div>
               </div>
               <div className="progress-row">
-                <div className="progress-label"><span>Scientists</span><span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{healthData.users.scientists}</span></div>
-                <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.users.total > 0 ? (healthData.users.scientists / healthData.users.total) * 100 : 0}%`, background: 'var(--success)' }} /></div>
+                <div className="progress-label"><span>Scientists</span><span style={{ color: '#111111', fontWeight: 700 }}>{healthData.users.scientists}</span></div>
+                <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.users.total > 0 ? (healthData.users.scientists / healthData.users.total) * 100 : 0}%`, background: '#5BCAF5' }} /></div>
               </div>
             </div>
 
             <div className="card">
               <div className="card-label" style={{ marginBottom: '1rem' }}><Navigation size={13} /> Trip Status</div>
               <div className="progress-row">
-                <div className="progress-label"><span>Validated</span><span style={{ color: 'var(--success)', fontWeight: 600 }}>{healthData.trips.validated}</span></div>
-                <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.trips.total > 0 ? (healthData.trips.validated / healthData.trips.total) * 100 : 0}%`, background: 'var(--success)' }} /></div>
+                <div className="progress-label"><span>Validated</span><span style={{ color: '#34D399', fontWeight: 700 }}>{healthData.trips.validated}</span></div>
+                <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.trips.total > 0 ? (healthData.trips.validated / healthData.trips.total) * 100 : 0}%`, background: '#34D399' }} /></div>
               </div>
               <div className="progress-row">
-                <div className="progress-label"><span>Pending</span><span style={{ color: 'var(--warning)', fontWeight: 600 }}>{healthData.trips.pending}</span></div>
-                <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.trips.total > 0 ? (healthData.trips.pending / healthData.trips.total) * 100 : 0}%`, background: 'var(--warning)' }} /></div>
+                <div className="progress-label"><span>Pending</span><span style={{ color: '#F5F230', fontWeight: 700 }}>{healthData.trips.pending}</span></div>
+                <div className="progress-track"><div className="progress-fill" style={{ width: `${healthData.trips.total > 0 ? (healthData.trips.pending / healthData.trips.total) * 100 : 0}%` }} /></div>
               </div>
             </div>
           </div>
 
+          {/* Service Endpoints */}
           <div className="card" style={{ marginTop: '1.5rem' }}>
             <div className="card-label" style={{ marginBottom: '1rem' }}><Wifi size={13} /> Service Endpoints</div>
             <div className="stack">
@@ -139,10 +141,10 @@ const SystemHealth = () => {
                 { name: 'React Frontend',    endpoint: 'http://localhost:5173', status: 'online' },
                 { name: 'MongoDB Instance',  endpoint: 'mongodb://localhost:27017', status: 'online' }
               ].map(service => (
-                <div key={service.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)' }}>
+                <div key={service.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: '#F2F2F2', borderRadius: '12px' }}>
                   <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{service.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{service.endpoint}</div>
+                    <div style={{ fontSize: '15px', fontWeight: 500, color: '#111111' }}>{service.name}</div>
+                    <div style={{ fontSize: '12px', color: '#888888' }}>{service.endpoint}</div>
                   </div>
                   <span className="badge badge-success"><Wifi size={10} /> {service.status}</span>
                 </div>
@@ -156,7 +158,7 @@ const SystemHealth = () => {
         <div className="stack">
           {usersData.length === 0 ? (
             <div className="card empty-state">
-              <Users size={36} style={{ color: 'var(--text-muted)' }} />
+              <Users size={36} style={{ color: '#888888' }} />
               <h3>No users found</h3>
             </div>
           ) : (
@@ -168,12 +170,12 @@ const SystemHealth = () => {
                 <div className="trip-info">
                   <div className="trip-title">{singleUser.fullName}</div>
                   <div className="trip-meta">
-                    <span className={`badge ${singleUser.userRole === 'scientist' ? 'badge-success' : 'badge-brand'}`}>
+                    <span className={`badge ${singleUser.userRole === 'scientist' ? 'badge-info' : 'badge-brand'}`}>
                       {singleUser.userRole}
                     </span>
                     <span className="trip-meta-item">{singleUser.totalTrips} trips</span>
                     <span className="trip-meta-item">{singleUser.validatedTrips} validated</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '12px', color: '#888888' }}>
                       Joined {new Date(singleUser.accountCreatedAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -182,7 +184,7 @@ const SystemHealth = () => {
                   className="icon-btn"
                   title="Delete user"
                   onClick={() => handleDeleteUser(singleUser.userId, singleUser.fullName)}
-                  style={{ color: 'var(--danger)' }}
+                  style={{ color: '#E24B4A' }}
                 >
                   ✕
                 </button>

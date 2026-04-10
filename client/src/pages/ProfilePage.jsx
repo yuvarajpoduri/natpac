@@ -59,7 +59,7 @@ const ProfilePage = () => {
   if (isLoading) {
     return (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div className="loading-pulse" style={{ color: 'var(--text-secondary)' }}>Loading profile...</div>
+        <div className="loading-pulse" style={{ fontSize: '13px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Loading profile...</div>
       </div>
     );
   }
@@ -75,70 +75,72 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '2rem 1.5rem' }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: '50%', background: 'var(--brand)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.5rem', fontWeight: 700, color: '#fff', marginBottom: '1rem'
-          }}>
-            {initials}
-          </div>
-          <div style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>{profileData?.fullName}</div>
-          <span className={`badge ${profileData?.userRole === 'scientist' ? 'badge-success' : 'badge-brand'}`} style={{ fontSize: '0.75rem' }}>
-            {profileData?.userRole === 'scientist' ? 'NATPAC Scientist' : 'Citizen User'}
-          </span>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
-            Member since {new Date(profileData?.accountCreatedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-          </div>
+      {/* Avatar + Name Section */}
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: 'var(--card-gap, 20px)' }}>
+        <div className="avatar avatar-lg">
+          {initials}
         </div>
-
-        <div className="card">
-          <div className="card-label" style={{ marginBottom: '1.25rem' }}><User size={13} /> Account Details</div>
-          <div className="stack">
-            {[
-              { icon: User, label: 'Full Name', value: profileData?.fullName },
-              { icon: Mail, label: 'Email', value: profileData?.emailAddress },
-              { icon: Shield, label: 'Role', value: profileData?.userRole },
-              { icon: Calendar, label: 'Joined', value: new Date(profileData?.accountCreatedAt).toLocaleDateString() }
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0.875rem', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)' }}>
-                <Icon size={15} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{value}</div>
-                </div>
-              </div>
-            ))}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>{profileData?.fullName}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span className={`badge ${profileData?.userRole === 'scientist' ? 'badge-info' : 'badge-brand'}`}>
+              {profileData?.userRole === 'scientist' ? 'Scientist' : 'Citizen'}
+            </span>
+            <span style={{ fontSize: '12px', color: '#999999' }}>
+              Member since {new Date(profileData?.accountCreatedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' })}
+            </span>
           </div>
         </div>
       </div>
 
+      {/* Account Details */}
+      <div className="card" style={{ marginBottom: 'var(--card-gap, 20px)' }}>
+        <div className="card-label"><User size={12} /> Account Details</div>
+        <div className="stack">
+          {[
+            { icon: User, label: 'Full Name', value: profileData?.fullName },
+            { icon: Mail, label: 'Email', value: profileData?.emailAddress },
+            { icon: Shield, label: 'Role', value: profileData?.userRole },
+            { icon: Calendar, label: 'Joined', value: new Date(profileData?.accountCreatedAt).toLocaleDateString() }
+          ].map(({ icon: Icon, label, value }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#F5F5F3', borderRadius: '12px' }}>
+              <Icon size={16} style={{ color: '#111111', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '11px', color: '#999999', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: '2px' }}>{label}</div>
+                <div style={{ fontSize: '15px', fontWeight: 500, color: '#111111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats */}
       {profileData?.statistics && (
-        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '1.5rem' }}>
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
           <div className="card">
-            <div className="card-label"><Navigation size={13} /> Total Trips</div>
+            <div className="card-label"><Navigation size={12} /> Total Trips</div>
             <div className="stat-value">{profileData.statistics.totalTrips}</div>
           </div>
           <div className="card">
-            <div className="card-label"><CheckCircle size={13} /> Validated</div>
-            <div className="stat-value" style={{ color: 'var(--success)' }}>{profileData.statistics.validatedTrips}</div>
+            <div className="card-label"><CheckCircle size={12} /> Validated</div>
+            <div className="stat-value" style={{ color: '#34D399' }}>{profileData.statistics.validatedTrips}</div>
           </div>
           <div className="card">
-            <div className="card-label"><Navigation size={13} /> Pending</div>
-            <div className="stat-value" style={{ color: 'var(--warning)' }}>{profileData.statistics.pendingTrips}</div>
+            <div className="card-label"><Navigation size={12} /> Pending</div>
+            <div className="stat-value">{profileData.statistics.pendingTrips}</div>
           </div>
           <div className="card">
-            <div className="card-label"><Route size={13} /> Distance</div>
+            <div className="card-label"><Route size={12} /> Distance</div>
             <div className="stat-value">{profileData.statistics.totalDistanceKm} km</div>
           </div>
         </div>
       )}
 
+      {/* Change Password */}
       <div className="card">
-        <div className="card-label" style={{ marginBottom: '1.25rem' }}><Lock size={13} /> Change Password</div>
-        <form onSubmit={handlePasswordChange} style={{ maxWidth: '420px' }}>
-          <div className="field" style={{ position: 'relative' }}>
+        <div className="card-label"><Lock size={12} /> Change Password</div>
+        <form onSubmit={handlePasswordChange}>
+          <div className="field">
             <label>Current Password</label>
             <div style={{ position: 'relative' }}>
               <input
@@ -148,32 +150,32 @@ const ProfilePage = () => {
                 placeholder="Enter current password"
                 required
               />
-              <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#999999', cursor: 'pointer', padding: '4px' }}>
                 {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
-          <div className="field" style={{ position: 'relative' }}>
+          <div className="field">
             <label>New Password</label>
             <div style={{ position: 'relative' }}>
               <input
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 6 characters)"
+                placeholder="Min 6 characters"
                 required
               />
-              <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#999999', cursor: 'pointer', padding: '4px' }}>
                 {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
           {passwordMessage.text && (
-            <div style={{ fontSize: '0.8125rem', color: passwordMessage.type === 'success' ? 'var(--success)' : 'var(--danger)', marginBottom: '0.75rem' }}>
+            <div style={{ fontSize: '13px', color: passwordMessage.type === 'success' ? '#34D399' : '#E24B4A', marginBottom: '12px', fontWeight: 500 }}>
               {passwordMessage.text}
             </div>
           )}
-          <button type="submit" className="btn-brand" disabled={isPasswordChanging}>
+          <button type="submit" className="btn-brand" style={{ width: '100%', justifyContent: 'center' }} disabled={isPasswordChanging}>
             {isPasswordChanging ? 'Updating...' : 'Update Password'}
           </button>
         </form>

@@ -27,7 +27,7 @@ const ScientistDashboard = () => {
           'Authorization': `Bearer ${localStorage.getItem('natpac_token')}`
         }
       });
-      setDashboardData(response.data);
+      setDashboardData(response.data.data);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     } finally {
@@ -38,7 +38,7 @@ const ScientistDashboard = () => {
   if (isLoading) {
     return (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div className="loading-pulse" style={{ color: 'var(--text-secondary)' }}>Loading live intelligence...</div>
+        <div className="loading-pulse" style={{ fontSize: '13px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Loading live intelligence...</div>
       </div>
     );
   }
@@ -52,54 +52,56 @@ const ScientistDashboard = () => {
     tripNodes
   } = dashboardData;
 
-  const maxModeValue = modeSplitData.length > 0 ? Math.max(...modeSplitData.map(m => m.value)) : 100;
-
   return (
     <div className="page">
+      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Analytics Dashboard</h1>
           <p className="page-subtitle">Kerala Transport Insights — live aggregated data</p>
         </div>
         <button className="btn-secondary">
-          <Download size={15} /> Export Report
+          <Download size={14} /> Export Report
         </button>
       </div>
 
+      {/* Stat Cards */}
       <div className="stats-grid">
         <div className="card">
-          <div className="card-label"><Users size={13} /> Active Citizens</div>
+          <div className="card-label"><Users size={12} /> Active Citizens</div>
           <div className="stat-value">{activeCitizens.toLocaleString()}</div>
-          <div className="stat-change"><TrendingUp size={12} /> Live tracking users</div>
+          <div className="stat-change"><TrendingUp size={11} /> Live tracking users</div>
         </div>
 
         <div className="card">
-          <div className="card-label"><Navigation size={13} /> Trips Captured</div>
+          <div className="card-label"><Navigation size={12} /> Trips Captured</div>
           <div className="stat-value">{tripsCaptured.toLocaleString()}</div>
-          <div className="stat-change"><TrendingUp size={12} /> {aiAccuracy}% AI accuracy</div>
+          <div className="stat-change"><TrendingUp size={11} /> {aiAccuracy}% AI accuracy</div>
         </div>
 
         <div className="card">
-          <div className="card-label"><Map size={13} /> Districts Covered</div>
+          <div className="card-label"><Map size={12} /> Districts Covered</div>
           <div className="stat-value">{districtsCovered} / 14</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kerala Coverage</div>
+          <div style={{ fontSize: '11px', color: '#999999', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>Kerala Coverage</div>
         </div>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+      {/* Mode Split + Map */}
+      <div className="grid-2">
+        {/* Mode Share Distribution */}
         <div className="card">
-          <div className="card-label" style={{ marginBottom: '1.25rem' }}>
-            <BarChart3 size={13} /> Mode Share Distribution
+          <div className="card-label" style={{ marginBottom: '20px' }}>
+            <BarChart3 size={12} /> Mode Share Distribution
           </div>
           <div>
             {modeSplitData.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No trips verified yet.</div>
+              <div style={{ color: '#999999', fontSize: '14px' }}>No trips verified yet.</div>
             ) : (
               modeSplitData.map((item) => (
                 <div className="progress-row" key={item.label}>
                   <div className="progress-label">
                     <span>{item.label}</span>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{item.value}%</span>
+                    <span style={{ color: '#111111', fontWeight: 700 }}>{item.value}%</span>
                   </div>
                   <div className="progress-track">
                     <div className="progress-fill" style={{ width: `${item.value}%` }} />
@@ -110,15 +112,18 @@ const ScientistDashboard = () => {
           </div>
         </div>
 
-        <div className="card" style={{ padding: 0, overflow: 'hidden', minHeight: '320px' }}>
-          <div style={{ padding: '1rem 1.375rem', borderBottom: '1px solid var(--border)' }}>
-            <div className="card-label"><Map size={13} /> Kerala Heatmap ({tripNodes.reduce((a, b) => a + b.trips, 0)} origins)</div>
+        {/* Kerala Heatmap */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '20px 28px', borderBottom: '1px solid #EBEBEB' }}>
+            <div className="card-label" style={{ marginBottom: 0 }}>
+              <Map size={12} /> Kerala Heatmap ({tripNodes.reduce((a, b) => a + b.trips, 0)} origins)
+            </div>
           </div>
-          <div style={{ height: '260px' }}>
+          <div style={{ flex: 1, minHeight: '320px', position: 'relative' }}>
             <MapContainer
               center={[10.5, 76.5]}
               zoom={7}
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
               zoomControl={true}
               scrollWheelZoom={true}
               maxBounds={[[8.15, 74.85], [12.85, 77.45]]}
@@ -132,7 +137,7 @@ const ScientistDashboard = () => {
                   key={i}
                   center={[node.lat, node.lng]}
                   radius={node.radius}
-                  pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.45, weight: 1.5 }}
+                  pathOptions={{ color: '#F5F230', fillColor: '#F5F230', fillOpacity: 0.55, weight: 1.5 }}
                 >
                   <Popup>{node.city} — {node.trips.toLocaleString()} trips</Popup>
                 </CircleMarker>

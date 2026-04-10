@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 
-const getAllSystemUsers = async (request, response) => {
+const getAllSystemUsers = async (request, response, next) => {
   try {
     const allUsers = await User.find({}).select('-passwordHash').sort({ accountCreatedAt: -1 });
 
@@ -21,9 +21,9 @@ const getAllSystemUsers = async (request, response) => {
       })
     );
 
-    response.status(200).json(usersWithTripCounts);
+    response.status(200).json({ status: 'success', data: usersWithTripCounts });
   } catch (error) {
-    response.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -46,34 +46,37 @@ const getSystemHealthStatus = async (request, response) => {
     const newestTrip = await Trip.findOne({}).sort({ tripRecordCreatedAt: -1 }).select('tripRecordCreatedAt');
 
     response.status(200).json({
-      serverStatus: 'online',
-      serverTimestamp: new Date().toISOString(),
-      nodeVersion: process.version,
-      uptime: `${Math.round(process.uptime())} seconds`,
-      memoryUsageMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      users: { total: totalUsers, citizens: totalCitizens, scientists: totalScientists },
-      trips: { total: totalTrips, validated: validatedTrips, pending: pendingTrips },
-      database: databaseSizeEstimate,
-      dataRange: {
-        oldest: oldestTrip?.tripRecordCreatedAt || null,
-        newest: newestTrip?.tripRecordCreatedAt || null
+      status: 'success',
+      data: {
+        serverStatus: 'online',
+        serverTimestamp: new Date().toISOString(),
+        nodeVersion: process.version,
+        uptime: `${Math.round(process.uptime())} seconds`,
+        memoryUsageMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        users: { total: totalUsers, citizens: totalCitizens, scientists: totalScientists },
+        trips: { total: totalTrips, validated: validatedTrips, pending: pendingTrips },
+        database: databaseSizeEstimate,
+        dataRange: {
+          oldest: oldestTrip?.tripRecordCreatedAt || null,
+          newest: newestTrip?.tripRecordCreatedAt || null
+        }
       }
     });
   } catch (error) {
-    response.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const deleteUserAccount = async (request, response) => {
+const deleteUserAccount = async (request, response, next) => {
   try {
     const { targetUserId } = request.params;
 
     await Trip.deleteMany({ userId: targetUserId });
     await User.findByIdAndDelete(targetUserId);
 
-    response.status(200).json({ message: 'User and associated trips deleted successfully' });
+    response.status(200).json({ status: 'success', message: 'User and associated trips deleted successfully' });
   } catch (error) {
-    response.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

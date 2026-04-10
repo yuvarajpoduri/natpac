@@ -1,7 +1,7 @@
 const Trip = require('../models/Trip');
 const axios = require('axios');
 
-const createNewTripRecord = async (request, response) => {
+const createNewTripRecord = async (request, response, next) => {
   try {
     const { 
       originCoordinates, 
@@ -20,11 +20,15 @@ const createNewTripRecord = async (request, response) => {
         avg_speed: averageSpeed,
         max_speed: maximumSpeed,
         duration: totalDurationSeconds,
-        stops: 0 // Will be calculated in future phases
+        stops: 0
       });
-      aiPrediction = aiServiceResponse.data.predictedMode;
+      aiPrediction = aiServiceResponse.data.predictedMode || 'Car';
     } catch (aiError) {
-      console.error('AI Service unreachable, setting to Pending');
+      console.warn('AI Service unreachable, using fallback heuristic prediction');
+      // Fallback heuristic based on speed:
+      if (averageSpeed < 8) aiPrediction = 'Walking';
+      else if (averageSpeed < 25) aiPrediction = 'Cycling';
+      else aiPrediction = 'Car';
     }
 
     const newTrip = new Trip({
@@ -40,22 +44,22 @@ const createNewTripRecord = async (request, response) => {
     });
 
     await newTrip.save();
-    response.status(201).json(newTrip);
+    response.status(201).json({ status: 'success', data: newTrip });
   } catch (error) {
-    response.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const getUserTripHistory = async (request, response) => {
+const getUserTripHistory = async (request, response, next) => {
   try {
     const userTrips = await Trip.find({ userId: request.user.userId }).sort({ tripRecordCreatedAt: -1 });
-    response.status(200).json(userTrips);
+    response.status(200).json({ status: 'success', data: userTrips });
   } catch (error) {
-    response.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const validateTripDetail = async (request, response) => {
+const validateTripDetail = async (request, response, next) => {
   try {
     const { tripId } = request.params;
     const { userValidatedMode, tripPurpose, travelCost, numberOfCompanions } = request.body;
@@ -73,17 +77,72 @@ const validateTripDetail = async (request, response) => {
     );
 
     if (!updatedTrip) {
-      return response.status(404).json({ message: 'Trip not found' });
+      const error = new Error('Trip not found or unauthorized');
+      error.status = 404;
+      throw error;
     }
 
-    response.status(200).json(updatedTrip);
+    response.status(200).json({ status: 'success', data: updatedTrip });
   } catch (error) {
-    response.status(500).json({ message: error.message });
+    next(error);
+  }
+};
+
+const simulateRealTrip = async (request, response, next) => {
+  try {
+    const { originLat, originLng, destLat, destLng } = request.body;
+    
+    // Call public OSRM mapping service to get real road distance and geometry (driving)
+    let carData = null;
+    try {
+      const osrmResponse = await axios.get(`http://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson`);
+      carData = osrmResponse.data.routes[0];
+    } catch(err) {
+      console.error('OSRM API Error:', err.message);
+      const error = new Error('Failed to compute route with external map service');
+      error.status = 502;
+      throw error;
+    }
+
+    const distanceKm = carData.distance / 1000;
+    
+    const simulations = {
+      Car: {
+        distanceKm: distanceKm,
+        durationMinutes: (carData.duration / 60),
+        cost: distanceKm * 8, // Rs 8 per km
+        co2EmissionsKg: distanceKm * 0.12, // 120g per km
+        geometry: carData.geometry
+      },
+      Bus: {
+        distanceKm: distanceKm * 1.05, // Buses typically have longer routes
+        durationMinutes: (carData.duration / 60) * 1.5, // 50% slower due to stops
+        cost: distanceKm * 1.5, // Rs 1.5 per km
+        co2EmissionsKg: distanceKm * 0.03, // 30g per km per passenger
+        geometry: carData.geometry
+      },
+      Bicycle: {
+        distanceKm: distanceKm,
+        durationMinutes: distanceKm / 15 * 60, // 15 km/h average speed
+        cost: 0,
+        co2EmissionsKg: 0,
+        geometry: carData.geometry
+      }
+    };
+
+    response.status(200).json({
+      status: 'success',
+      data: simulations
+    });
+
+  } catch (error) {
+    next(error);
   }
 };
 
 module.exports = {
   createNewTripRecord,
   getUserTripHistory,
-  validateTripDetail
+  validateTripDetail,
+  simulateRealTrip
 };
