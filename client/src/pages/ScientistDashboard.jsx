@@ -22,7 +22,7 @@ const ScientistDashboard = () => {
 
   const fetchLiveAnalytics = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/analytics/dashboard', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/analytics/dashboard`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('natpac_token')}`
         }

@@ -20,7 +20,7 @@ const TravelDiary = () => {
 
   const fetchUserTripHistory = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/trips/history', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/trips/history`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('natpac_token')}` }
       });
       setTripHistory(response.data.data);
@@ -42,7 +42,7 @@ const TravelDiary = () => {
     setIsValidationSubmitting(true);
     try {
       const response = await axios.patch(
-        `http://localhost:5000/api/trips/${selectedTrip._id}/validate`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/trips/${selectedTrip._id}/validate`,
         { userValidatedMode: validatedMode, tripPurpose },
         { headers: { 'Authorization': `Bearer ${localStorage.getItem('natpac_token')}` } }
       );

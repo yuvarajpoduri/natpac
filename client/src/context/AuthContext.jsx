@@ -20,7 +20,7 @@ export const AuthenticationProvider = ({ children }) => {
 
   const loginUser = async (emailAddress, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/login`, {
         emailAddress,
         password
       });
@@ -41,7 +41,7 @@ export const AuthenticationProvider = ({ children }) => {
 
   const registerUser = async (fullName, emailAddress, password, userRole) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/register`, {
         fullName,
         emailAddress,
         password,

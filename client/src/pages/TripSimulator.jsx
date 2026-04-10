@@ -48,7 +48,7 @@ const TripSimulator = () => {
     setSimulationState('simulating');
     setScenarios(null);
     try {
-      const response = await axios.post('http://localhost:5000/api/trips/simulate', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/trips/simulate`, {
         originLat: origin.lat,
         originLng: origin.lng,
         destLat: destination.lat,
@@ -79,7 +79,7 @@ const TripSimulator = () => {
     }));
 
     try {
-      await axios.post('http://localhost:5000/api/trips', {
+      await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/trips`, {
         originCoordinates: { latitude: origin.lat, longitude: origin.lng, timestamp: new Date() },
         destinationCoordinates: { latitude: destination.lat, longitude: destination.lng, timestamp: new Date(Date.now() + selectedData.durationMinutes * 60000) },
         tripPoints: dummyPoints,
@@ -164,7 +164,7 @@ const TripSimulator = () => {
     const avgSpd = speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
 
     try {
-      await axios.post('http://localhost:5000/api/trips', {
+      await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/trips`, {
         originCoordinates: { latitude: originPoint.latitude, longitude: originPoint.longitude, timestamp: originPoint.timestamp },
         destinationCoordinates: { latitude: destinationPoint.latitude, longitude: destinationPoint.longitude, timestamp: destinationPoint.timestamp },
         tripPoints: gpsPoints,

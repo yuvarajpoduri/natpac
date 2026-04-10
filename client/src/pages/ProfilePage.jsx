@@ -22,7 +22,7 @@ const ProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/profile/me', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/profile/me`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       setProfileData(response.data);
@@ -42,7 +42,7 @@ const ProfilePage = () => {
     setIsPasswordChanging(true);
     setPasswordMessage({ text: '', type: '' });
     try {
-      await axios.patch('http://localhost:5000/api/profile/password',
+      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/profile/password`,
         { currentPassword, newPassword },
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );

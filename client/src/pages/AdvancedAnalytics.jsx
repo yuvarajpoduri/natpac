@@ -12,7 +12,7 @@ const AdvancedAnalytics = () => {
 
   const fetchAdvancedData = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/export/advanced', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/export/advanced`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('natpac_token')}`
         }

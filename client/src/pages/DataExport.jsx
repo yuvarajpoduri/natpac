@@ -20,7 +20,7 @@ const DataExport = () => {
     setIsPreviewLoading(true);
     try {
       const query = new URLSearchParams(filters).toString();
-      const response = await axios.get(`http://localhost:5000/api/export/preview?${query}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/export/preview?${query}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       setPreviewData(response.data.data.slice(0, 5));
@@ -39,7 +39,7 @@ const DataExport = () => {
 
     try {
       const query = new URLSearchParams(filters).toString();
-      const response = await fetch(`http://localhost:5000/api/export/${format}?${query}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/export/${format}?${query}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       

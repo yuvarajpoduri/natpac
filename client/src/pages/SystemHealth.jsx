@@ -20,8 +20,8 @@ const SystemHealth = () => {
     setIsLoading(true);
     try {
       const [healthResponse, usersResponse] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/health', authHeaders),
-        axios.get('http://localhost:5000/api/admin/users', authHeaders)
+        axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/health`, authHeaders),
+        axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/users`, authHeaders)
       ]);
       setHealthData(healthResponse.data.data);
       setUsersData(usersResponse.data.data);
@@ -36,7 +36,7 @@ const SystemHealth = () => {
   const handleDeleteUser = async (targetUserId, targetUserName) => {
     if (!window.confirm(`Are you sure you want to delete "${targetUserName}" and all their trips?`)) return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/users/${targetUserId}`, authHeaders);
+      await axios.delete(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/users/${targetUserId}`, authHeaders);
       setUsersData(prev => prev.filter(u => u.userId !== targetUserId));
     } catch (error) {
       console.error('Failed to delete user:', error);
