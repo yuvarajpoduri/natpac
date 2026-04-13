@@ -120,6 +120,11 @@ const TravelDiary = () => {
                   <span className="trip-meta-item">
                     <MapPin size={12} />{(trip.totalDistance / 1000).toFixed(1)} km
                   </span>
+                  {trip.originCoordinates?.name && (
+                    <span className="trip-meta-item" style={{ flex: '1 1 100%', marginTop: '0.25rem', color: '#666666' }}>
+                      <MapPin size={12} style={{ opacity: 0 }} />{trip.originCoordinates.name} → {trip.destinationCoordinates?.name}
+                    </span>
+                  )}
                   {trip.isTripValidated && (
                     <span className="badge badge-brand">{trip.tripPurpose}</span>
                   )}

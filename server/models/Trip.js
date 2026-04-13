@@ -9,12 +9,14 @@ const tripSchema = new mongoose.Schema({
   originCoordinates: {
     latitude: Number,
     longitude: Number,
-    timestamp: Date
+    timestamp: Date,
+    name: String
   },
   destinationCoordinates: {
     latitude: Number,
     longitude: Number,
-    timestamp: Date
+    timestamp: Date,
+    name: String
   },
   tripPoints: [{
     latitude: Number,

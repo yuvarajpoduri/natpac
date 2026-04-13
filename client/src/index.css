@@ -1371,3 +1371,8 @@ a { color: var(--text-primary); text-decoration: none; }
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
 .w-full { width: 100%; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

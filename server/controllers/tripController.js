@@ -13,6 +13,33 @@ const createNewTripRecord = async (request, response, next) => {
       totalDurationSeconds
     } = request.body;
 
+    let originName = 'Unknown Location';
+    let destName = 'Unknown Location';
+
+    const getPlaceName = async (lat, lng) => {
+      try {
+        const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+          headers: { 'User-Agent': 'NATPAC_App/1.0' }
+        });
+        if (response.data && response.data.address) {
+          const addr = response.data.address;
+          return addr.village || addr.suburb || addr.neighbourhood || addr.road || addr.city || addr.town || 'Unknown Location';
+        }
+      } catch (err) {
+        console.warn('Reverse geocoding failed:', err.message);
+      }
+      return 'Unknown Location';
+    };
+
+    if (originCoordinates && originCoordinates.latitude) {
+      originName = await getPlaceName(originCoordinates.latitude, originCoordinates.longitude);
+      originCoordinates.name = originName;
+    }
+    if (destinationCoordinates && destinationCoordinates.latitude) {
+      destName = await getPlaceName(destinationCoordinates.latitude, destinationCoordinates.longitude);
+      destinationCoordinates.name = destName;
+    }
+
     let aiPrediction = 'Pending';
     
     try {

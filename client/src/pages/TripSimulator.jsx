@@ -134,30 +134,35 @@ const TripSimulator = () => {
     setIsTrackingActive(false);
     setTrackingStatus('processing');
 
-    if (gpsPoints.length < 2) {
-      alert('Not enough GPS data safely captured. Please move around and try again for at least 30 seconds.');
+    const validPoints = gpsPoints.filter(p => !p.accuracy || p.accuracy <= 40);
+
+    if (validPoints.length < 2) {
+      alert('Not enough accurate GPS data safely captured. Please move around outside for clearer signal and try again for at least 30 seconds.');
       setTrackingStatus('idle');
       return;
     }
 
-    const originPoint = gpsPoints[0];
-    const destinationPoint = gpsPoints[gpsPoints.length - 1];
-    const totalDurationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const originPoint = validPoints[0];
+    const destinationPoint = validPoints[validPoints.length - 1];
+    const totalDurationSeconds = Math.round((destinationPoint.timestamp - originPoint.timestamp) / 1000) || Math.round((Date.now() - startTimeRef.current) / 1000);
 
     let totalDist = 0, maxSpd = 0;
     const speeds = [];
 
-    for (let i = 1; i < gpsPoints.length; i++) {
+    let lastPoint = validPoints[0];
+    for (let i = 1; i < validPoints.length; i++) {
       const dist = calculateDistanceBetweenPoints(
-        gpsPoints[i - 1].latitude, gpsPoints[i - 1].longitude,
-        gpsPoints[i].latitude, gpsPoints[i].longitude
+        lastPoint.latitude, lastPoint.longitude,
+        validPoints[i].latitude, validPoints[i].longitude
       );
-      totalDist += dist;
-      const tSecs = (gpsPoints[i].timestamp - gpsPoints[i - 1].timestamp) / 1000;
-      if (tSecs > 0) {
+      // Reduce GPS drift by ignoring micro-movements smaller than 5 meters
+      if (dist > 5) {
+        totalDist += dist;
+        const tSecs = Math.max(1, (validPoints[i].timestamp - lastPoint.timestamp) / 1000);
         const spd = (dist / tSecs) * 3.6;
         speeds.push(spd);
         if (spd > maxSpd) maxSpd = spd;
+        lastPoint = validPoints[i];
       }
     }
 
@@ -167,7 +172,7 @@ const TripSimulator = () => {
       await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/trips`, {
         originCoordinates: { latitude: originPoint.latitude, longitude: originPoint.longitude, timestamp: originPoint.timestamp },
         destinationCoordinates: { latitude: destinationPoint.latitude, longitude: destinationPoint.longitude, timestamp: destinationPoint.timestamp },
-        tripPoints: gpsPoints,
+        tripPoints: validPoints,
         averageSpeed: parseFloat(avgSpd.toFixed(1)),
         maximumSpeed: parseFloat(maxSpd.toFixed(1)),
         totalDistance: Math.round(totalDist),
