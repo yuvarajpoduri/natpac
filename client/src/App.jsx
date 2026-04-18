@@ -11,7 +11,10 @@ import DataExport from './pages/DataExport';
 import SystemHealth from './pages/SystemHealth';
 import ProfilePage from './pages/ProfilePage';
 import AboutPage from './pages/AboutPage';
-import { LayoutDashboard, BookOpen, Activity, LogOut, Menu, X, BarChart3, Download, Server, UserCircle, Info } from 'lucide-react';
+import PersonalStatsDashboard from './pages/PersonalStatsDashboard';
+import ScientistFilters from './pages/ScientistFilters';
+import PrivacyPage from './pages/PrivacyPage';
+import { Menu, X, LogOut } from 'lucide-react';
 
 /* ── Brand Icon — Stylized route connecting two points ── */
 const RouteIcon = ({ size = 30, className = '' }) => (
@@ -63,33 +66,27 @@ const MainLayout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
+  useEffect(() => { setIsMenuOpen(false); }, [location.pathname]);
 
   useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [isMenuOpen]);
 
-  const navItems = [
-    { to: '/dashboard', label: 'Dashboard' }
-  ];
+  const navItems = [{ to: '/dashboard', label: 'Dashboard' }];
 
   if (currentUser.userRole === 'citizen') {
     navItems.push(
       { to: '/diary', label: 'Travel Diary' },
-      { to: '/simulate', label: 'Trip Simulator' }
+      { to: '/simulate', label: 'Trip Simulator' },
+      { to: '/my-stats', label: 'My Stats' }           // Feature 2 + 3 + 5 + 8
     );
   }
 
   if (currentUser.userRole === 'scientist') {
     navItems.push(
       { to: '/analytics', label: 'Analytics' },
+      { to: '/filters', label: 'Data Filters' },        // Feature 7 + 11
       { to: '/export', label: 'Data Export' },
       { to: '/system', label: 'System Monitor' }
     );
@@ -97,6 +94,7 @@ const MainLayout = ({ children }) => {
 
   navItems.push(
     { to: '/profile', label: 'My Profile' },
+    { to: '/privacy', label: 'Privacy' },              // Feature 10
     { to: '/about', label: 'About' }
   );
 
@@ -183,14 +181,31 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+
+          {/* Shared */}
           <Route path="/dashboard" element={<ProtectedRoute><MainLayout><ScientistDashboard /></MainLayout></ProtectedRoute>} />
-          <Route path="/diary" element={<ProtectedRoute><MainLayout><TravelDiary /></MainLayout></ProtectedRoute>} />
+          <Route path="/profile"   element={<ProtectedRoute><MainLayout><ProfilePage /></MainLayout></ProtectedRoute>} />
+          <Route path="/about"     element={<ProtectedRoute><MainLayout><AboutPage /></MainLayout></ProtectedRoute>} />
+
+          {/* Feature 10: Privacy page */}
+          <Route path="/privacy"   element={<ProtectedRoute><MainLayout><PrivacyPage /></MainLayout></ProtectedRoute>} />
+
+          {/* Citizen */}
+          <Route path="/diary"    element={<ProtectedRoute><MainLayout><TravelDiary /></MainLayout></ProtectedRoute>} />
           <Route path="/simulate" element={<ProtectedRoute><MainLayout><TripSimulator /></MainLayout></ProtectedRoute>} />
+
+          {/* Feature 2 + 3 + 5 + 8: Personal Stats */}
+          <Route path="/my-stats" element={<ProtectedRoute><MainLayout><PersonalStatsDashboard /></MainLayout></ProtectedRoute>} />
+
+          {/* Scientist */}
           <Route path="/analytics" element={<ProtectedRoute><MainLayout><AdvancedAnalytics /></MainLayout></ProtectedRoute>} />
+
+          {/* Feature 7 + 11: Scientist Filters & AI Accuracy */}
+          <Route path="/filters" element={<ProtectedRoute><MainLayout><ScientistFilters /></MainLayout></ProtectedRoute>} />
+
           <Route path="/export" element={<ProtectedRoute><MainLayout><DataExport /></MainLayout></ProtectedRoute>} />
           <Route path="/system" element={<ProtectedRoute><MainLayout><SystemHealth /></MainLayout></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><MainLayout><ProfilePage /></MainLayout></ProtectedRoute>} />
-          <Route path="/about" element={<ProtectedRoute><MainLayout><AboutPage /></MainLayout></ProtectedRoute>} />
+
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </Router>

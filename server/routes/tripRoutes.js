@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
-const { 
-  createNewTripRecord, 
-  getUserTripHistory, 
+const {
+  createNewTripRecord,
+  getUserTripHistory,
   validateTripDetail,
+  addIssueTags,
   simulateRealTrip
 } = require('../controllers/tripController');
 const authenticationMiddleware = require('../middleware/authMiddleware');
@@ -36,15 +37,29 @@ const tripCreationSchema = Joi.object({
 });
 
 const tripValidationSchema = Joi.object({
-  userValidatedMode: Joi.string().valid('Walking', 'Cycling', 'Car', 'Bus', 'Auto-Rickshaw', 'Train', 'Ferry').required(),
-  tripPurpose: Joi.string().valid('Work', 'Education', 'Shopping', 'Social / Recreation', 'Medical', 'Return Home').required(),
+  userValidatedMode: Joi.string()
+    .valid('Walking', 'Cycling', 'Car', 'Bus', 'Auto-Rickshaw', 'Train', 'Ferry')
+    .required(),
+  tripPurpose: Joi.string()
+    .valid('Work', 'Education', 'Shopping', 'Social / Recreation', 'Medical', 'Return Home')
+    .required(),
   travelCost: Joi.number().min(0).optional(),
   numberOfCompanions: Joi.number().min(0).optional()
+});
+
+// Feature 9: Issue tag schema
+const issueTagSchema = Joi.object({
+  tags: Joi.array()
+    .items(Joi.string().valid('Traffic', 'Bad Road', 'Delay'))
+    .required()
 });
 
 router.post('/', validatePayload(tripCreationSchema), createNewTripRecord);
 router.post('/simulate', simulateRealTrip);
 router.get('/history', getUserTripHistory);
 router.patch('/:tripId/validate', validatePayload(tripValidationSchema), validateTripDetail);
+
+// Feature 9: Tag issues on a trip
+router.patch('/:tripId/tags', validatePayload(issueTagSchema), addIssueTags);
 
 module.exports = router;

@@ -29,9 +29,17 @@ const tripSchema = new mongoose.Schema({
   }],
   averageSpeed: Number,
   maximumSpeed: Number,
-  totalDistance: Number,
-  totalDurationSeconds: Number,
+  // Feature 12: computed via Haversine and stored
+  totalDistance: Number,        // in metres
+  totalDurationSeconds: Number, // in seconds
+
+  // Feature 1: AI confidence score
   aiPredictedMode: String,
+  aiConfidenceScore: {          // 0-100 percentage
+    type: Number,
+    default: null
+  },
+
   userValidatedMode: String,
   tripPurpose: String,
   numberOfCompanions: {
@@ -46,6 +54,25 @@ const tripSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+
+  // Feature 7: AI accuracy tracking per trip (null = not yet validated)
+  aiPredictionCorrect: {
+    type: Boolean,
+    default: null
+  },
+
+  // Feature 6: Carbon footprint in grams CO2
+  carbonEmissionGrams: {
+    type: Number,
+    default: null
+  },
+
+  // Feature 9: Manual issue tags e.g. ['Traffic', 'Bad Road', 'Delay']
+  issueTags: {
+    type: [String],
+    default: []
+  },
+
   tripRecordCreatedAt: {
     type: Date,
     default: Date.now
