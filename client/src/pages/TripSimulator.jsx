@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Play, Navigation, MapPin, Gauge, Bus, Car, Bike,
-  Clock, Leaf, Square, Map, RotateCcw, Save, Wifi, WifiOff, RefreshCw
+  Clock, Leaf, Square, Map, RotateCcw, Save, Wifi, WifiOff, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, CircleMarker } from 'react-leaflet';
 import { useBackgroundGPS } from '../hooks/useBackgroundGPS';
@@ -360,7 +360,7 @@ const TripSimulator = () => {
             {/* Background note */}
             {isTracking && (
               <p style={{ fontSize: 12, color: '#888', marginTop: '0.75rem', lineHeight: 1.6 }}>
-                📱 <strong>Safe to close this app.</strong> A persistent notification will appear
+                <strong>Safe to close this app.</strong> A persistent notification will appear
                 in your notification shade. GPS points are saved to device storage and will be
                 synced when you tap "Stop &amp; Save" — even after re-opening the app.
               </p>
@@ -394,8 +394,8 @@ const TripSimulator = () => {
 
             {latestPt && (
               <div style={{ fontSize: '13px', color: '#666' }}>
-                <div style={{ marginBottom: 4 }}>
-                  📍 Coords:{' '}
+                <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={13} color="#666" /> Coords:{' '}
                   <span style={{ color: '#111', fontWeight: 500 }}>
                     {latestPt.latitude.toFixed(5)}, {latestPt.longitude.toFixed(5)}
                   </span>
@@ -414,10 +414,12 @@ const TripSimulator = () => {
             {!('serviceWorker' in navigator) && (
               <div style={{
                 marginTop: '1rem', fontSize: 12, color: '#E24B4A',
-                background: '#FEF2F2', padding: '0.6rem 0.75rem', borderRadius: 8, lineHeight: 1.5
+                background: '#FEF2F2', padding: '0.6rem 0.75rem', borderRadius: 8, lineHeight: 1.5,
+                display: 'flex', gap: 6, alignItems: 'flex-start'
               }}>
-                ⚠️ Service Workers not supported in this browser. Background tracking will not
-                persist when the tab is closed.
+                <span style={{ marginTop: 2 }}><AlertTriangle size={14} /></span>
+                <span>Service Workers not supported in this browser. Background tracking will not
+                persist when the tab is closed.</span>
               </div>
             )}
           </div>

@@ -73,6 +73,51 @@ const tripSchema = new mongoose.Schema({
     default: []
   },
 
+  // Smart Map Issue Visualization
+  issueEvents: [{
+    issueType: { type: String, enum: ['traffic', 'delay', 'bad_road'] },
+    latitude: Number,
+    longitude: Number,
+    timestamp: Date,
+    durationSeconds: { type: Number, default: 0 }
+  }],
+
+  // ── ADVANCED ANALYTICS FEATURES ──
+
+  // 1. Habit Detection Engine
+  habitLabel: { type: String, default: null }, // e.g. "Morning Commute", "Evening Return"
+
+  // 2. Trip Purpose Prediction
+  predictedPurpose: { type: String, default: null },
+  purposeConfirmed: { type: Boolean, default: false },
+
+  // 3. Travel Stress Score
+  stressScore: { type: Number, default: null }, // 0-100
+  stressLevel: { type: String, enum: ['Low', 'Medium', 'High', null], default: null },
+
+  // 4. Dead Time Detector
+  idleTimeSeconds: { type: Number, default: 0 },
+
+  // 5. Smart Trip Merging (If merged, refer to parent)
+  isMerged: { type: Boolean, default: false },
+  parentTripId: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip', default: null },
+
+  // 6. Route Similarity (Cluster ID)
+  routeClusterId: { type: String, default: null },
+
+  // 8. Data Confidence Score
+  dataConfidenceScore: { type: Number, default: null }, // 0-100
+
+  // 9. Auto Trip Tagging
+  autoTags: { type: [String], default: [] }, // e.g. ["Short Trip", "Frequent Route"]
+
+  // 10. Travel Efficiency Score
+  efficiencyScore: { type: Number, default: null }, // percentage 0-100
+
+  // 12. Anomaly Detection
+  isAnomalous: { type: Boolean, default: false },
+  anomalyReasons: { type: [String], default: [] },
+
   tripRecordCreatedAt: {
     type: Date,
     default: Date.now

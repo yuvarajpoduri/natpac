@@ -50,17 +50,43 @@ const getDashboardAnalytics = async (request, response) => {
 
     // Group close coordinates into city nodes
     let groupedNodes = [];
+    let issueZones = []; // Feature 6: Optional issue clustering
+
     trips.forEach((t) => {
-      const lat = parseFloat(t.originCoordinates.latitude.toFixed(2));
-      const lng = parseFloat(t.originCoordinates.longitude.toFixed(2));
-      const found = groupedNodes.find((node) => node.lat === lat && node.lng === lng);
-      if (found) {
-        found.trips += 1;
-        found.radius = Math.min(found.radius + 1.5, 35);
-      } else {
-        groupedNodes.push({ lat, lng, trips: 1, radius: 10, city: `Zone (${lat}, ${lng})` });
+      // Process origin node
+      if (t.originCoordinates) {
+        const lat = parseFloat(t.originCoordinates.latitude.toFixed(2));
+        const lng = parseFloat(t.originCoordinates.longitude.toFixed(2));
+        const found = groupedNodes.find((node) => node.lat === lat && node.lng === lng);
+        if (found) {
+          found.trips += 1;
+          found.radius = Math.min(found.radius + 1.5, 35);
+        } else {
+          groupedNodes.push({ lat, lng, trips: 1, radius: 10, city: `Zone (${lat}, ${lng})` });
+        }
+      }
+
+      // Process issue clustering
+      if (t.issueEvents && t.issueEvents.length > 0) {
+        t.issueEvents.forEach(issue => {
+          if (!issue.latitude || !issue.longitude) return;
+          // Cluster by ~1km radius (approx 0.01 deg)
+          const lat = parseFloat(issue.latitude.toFixed(2));
+          const lng = parseFloat(issue.longitude.toFixed(2));
+          const foundZone = issueZones.find((z) => z.lat === lat && z.lng === lng);
+          if (foundZone) {
+            foundZone.count += 1;
+            foundZone.types.add(issue.issueType);
+          } else {
+            issueZones.push({ lat, lng, count: 1, types: new Set([issue.issueType]) });
+          }
+        });
       }
     });
+
+    const highIssueZones = issueZones
+      .filter(z => z.count > 1) // Must have >1 report
+      .map(z => ({ lat: z.lat, lng: z.lng, count: z.count, types: Array.from(z.types) }));
 
     response.status(200).json({
       status: 'success',
@@ -70,7 +96,8 @@ const getDashboardAnalytics = async (request, response) => {
         aiAccuracy,
         districtsCovered: groupedNodes.length > 14 ? 14 : groupedNodes.length || 0,
         modeSplitData,
-        tripNodes: groupedNodes
+        tripNodes: groupedNodes,
+        highIssueZones
       }
     });
   } catch (error) {
@@ -130,6 +157,21 @@ const getPersonalStats = async (request, response) => {
       { $group: { _id: null, totalCarbon: { $sum: '$carbonEmissionGrams' } } }
     ]);
 
+    // Feature 7: Peak Time Personal Alerts (Historical Prediction)
+    const delayedTrips = await Trip.find({ userId: oid, idleTimeSeconds: { $gt: 180 } });
+    let peakAlert = null;
+    if (delayedTrips.length > 0) {
+      const delayHours = new Array(24).fill(0);
+      delayedTrips.forEach(t => {
+        if (t.tripRecordCreatedAt) delayHours[new Date(t.tripRecordCreatedAt).getHours()]++;
+      });
+      const peakDelayHour = delayHours.indexOf(Math.max(...delayHours));
+      if (delayHours[peakDelayHour] >= 2) { // Need at least 2 instances to form a pattern
+        const timeStr = peakDelayHour > 12 ? `${peakDelayHour - 12} PM` : `${peakDelayHour === 0 ? 12 : peakDelayHour} AM`;
+        peakAlert = `You usually face heavy traffic or delays around ${timeStr}. Consider traveling earlier.`;
+      }
+    }
+
     const s = stats[0] || {};
     const user = await User.findById(userId).select('points fullName frequentLocations');
 
@@ -144,7 +186,8 @@ const getPersonalStats = async (request, response) => {
         modeBreakdown: modeBreakdown.map((m) => ({ mode: m._id || 'Unknown', count: m.count })),
         totalCarbonGrams: carbonStats[0]?.totalCarbon || 0,
         points: user?.points || 0,
-        frequentLocations: user?.frequentLocations || []
+        frequentLocations: user?.frequentLocations || [],
+        peakAlert
       }
     });
   } catch (error) {
@@ -267,9 +310,9 @@ const getAiAccuracyStats = async (request, response) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getFilteredTrips = async (request, response) => {
   try {
-    const { startDate, endDate, mode, timeOfDay } = request.query;
+    const { startDate, endDate, mode, timeOfDay, tripPurpose, minConfidence } = request.query;
 
-    const filter = {};
+    const filter = { isMerged: false };
 
     if (startDate || endDate) {
       filter.tripRecordCreatedAt = {};
@@ -285,10 +328,18 @@ const getFilteredTrips = async (request, response) => {
       filter.$or = [{ aiPredictedMode: mode }, { userValidatedMode: mode }];
     }
 
+    if (tripPurpose) {
+      filter.tripPurpose = tripPurpose;
+    }
+
+    if (minConfidence) {
+      filter.dataConfidenceScore = { $gte: parseInt(minConfidence, 10) };
+    }
+
     let trips = await Trip.find(filter)
       .sort({ tripRecordCreatedAt: -1 })
       .select(
-        'aiPredictedMode userValidatedMode isTripValidated totalDistance totalDurationSeconds tripRecordCreatedAt carbonEmissionGrams averageSpeed'
+        'aiPredictedMode userValidatedMode isTripValidated totalDistance totalDurationSeconds tripRecordCreatedAt carbonEmissionGrams averageSpeed tripPurpose dataConfidenceScore stressLevel efficiencyScore'
       );
 
     // Time-of-day filter (post-query in memory for simplicity)

@@ -1,6 +1,7 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
 const axios = require('axios');
+const { processTripFeatures, mergeTripsIfPossible } = require('../utils/advancedAnalyticsEngine');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Feature 12: Haversine distance formula between two lat/lng points (metres)
@@ -200,6 +201,13 @@ const createNewTripRecord = async (request, response, next) => {
       carbonEmissionGrams
     });
 
+    // --- APPLY ADVANCED ANALYTICS (Features 1-10, 12) ---
+    const advancedUpdates = await processTripFeatures(newTrip, request.user.userId, tripPoints);
+    Object.assign(newTrip, advancedUpdates);
+
+    // Feature 5: Smart Trip Merging
+    await mergeTripsIfPossible(request.user.userId, newTrip);
+
     await newTrip.save();
 
     // Feature 3: +5 points per trip logged
@@ -225,7 +233,8 @@ const createNewTripRecord = async (request, response, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getUserTripHistory = async (request, response, next) => {
   try {
-    const userTrips = await Trip.find({ userId: request.user.userId }).sort({ tripRecordCreatedAt: -1 });
+    // Only return non-merged trips for history
+    const userTrips = await Trip.find({ userId: request.user.userId, isMerged: false }).sort({ tripRecordCreatedAt: -1 });
     response.status(200).json({ status: 'success', data: userTrips });
   } catch (error) {
     next(error);
@@ -291,17 +300,44 @@ const addIssueTags = async (request, response, next) => {
     const VALID_TAGS = ['Traffic', 'Bad Road', 'Delay'];
     const filteredTags = (tags || []).filter((tag) => VALID_TAGS.includes(tag));
 
-    const updatedTrip = await Trip.findOneAndUpdate(
-      { _id: tripId, userId: request.user.userId },
-      { issueTags: filteredTags },
-      { new: true }
-    );
-
-    if (!updatedTrip) {
+    const trip = await Trip.findOne({ _id: tripId, userId: request.user.userId });
+    if (!trip) {
       const err = new Error('Trip not found or unauthorized');
       err.status = 404;
       throw err;
     }
+
+    trip.issueTags = filteredTags;
+
+    // Smart Map Issue Visualization: if "Bad Road" is tagged, try to add an event at the midpoint
+    if (filteredTags.includes('Bad Road')) {
+      const alreadyHasBadRoad = trip.issueEvents.some(e => e.issueType === 'bad_road');
+      if (!alreadyHasBadRoad) {
+        let lat = null, lng = null, ts = null;
+        if (trip.tripPoints && trip.tripPoints.length > 0) {
+          const mid = Math.floor(trip.tripPoints.length / 2);
+          lat = trip.tripPoints[mid].latitude;
+          lng = trip.tripPoints[mid].longitude;
+          ts = trip.tripPoints[mid].timestamp;
+        } else if (trip.originCoordinates) {
+          lat = trip.originCoordinates.latitude;
+          lng = trip.originCoordinates.longitude;
+          ts = trip.originCoordinates.timestamp;
+        }
+
+        if (lat && lng) {
+          trip.issueEvents.push({
+            issueType: 'bad_road',
+            latitude: lat,
+            longitude: lng,
+            timestamp: ts || new Date(),
+            durationSeconds: 0
+          });
+        }
+      }
+    }
+
+    const updatedTrip = await trip.save();
 
     response.status(200).json({ status: 'success', data: updatedTrip });
   } catch (error) {
@@ -319,14 +355,29 @@ const simulateRealTrip = async (request, response, next) => {
     let carData = null;
     try {
       const osrmResponse = await axios.get(
-        `http://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson`
+        `http://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson`,
+        { timeout: 5000 }
       );
       carData = osrmResponse.data.routes[0];
     } catch (err) {
-      console.error('OSRM API Error:', err.message);
-      const error = new Error('Failed to compute route with external map service');
-      error.status = 502;
-      throw error;
+      console.warn('OSRM API Error, using straight-line fallback:', err.message);
+      
+      // Fallback: Haversine distance and straight line geometry
+      const R = 6371000;
+      const toRad = (deg) => (deg * Math.PI) / 180;
+      const dLat = toRad(destLat - originLat);
+      const dLng = toRad(destLng - originLng);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(originLat)) * Math.cos(toRad(destLat)) * Math.sin(dLng / 2) ** 2;
+      const distMeters = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      
+      carData = {
+        distance: distMeters,
+        duration: (distMeters / 1000) / 40 * 3600, // assume 40km/h
+        geometry: {
+          type: 'LineString',
+          coordinates: [[originLng, originLat], [destLng, destLat]]
+        }
+      };
     }
 
     const distanceKm = carData.distance / 1000;

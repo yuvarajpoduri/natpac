@@ -3,16 +3,16 @@ import axios from 'axios';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { TrendingUp, Navigation, Clock, Leaf, Award, MapPin } from 'lucide-react';
+import { TrendingUp, Navigation, Clock, Leaf, Award, MapPin, AlertTriangle } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const token = () => localStorage.getItem('natpac_token');
 
 // Feature 3: Badge thresholds
 const getBadge = (points) => {
-  if (points >= 150) return { label: 'Smart Validator', color: '#7C3AED', emoji: '🏆' };
-  if (points >= 50) return { label: 'Eco Starter', color: '#16A34A', emoji: '🌿' };
-  return { label: 'Explorer', color: '#888888', emoji: '🗺️' };
+  if (points >= 150) return { label: 'Smart Validator', color: '#7C3AED', icon: Award };
+  if (points >= 50) return { label: 'Eco Starter', color: '#16A34A', icon: Leaf };
+  return { label: 'Explorer', color: '#888888', icon: MapPin };
 };
 
 const COLORS = ['#F5F230', '#5BCAF5', '#FF6B6B', '#4ECDC4', '#A78BFA', '#FBD38D', '#FC8181'];
@@ -107,7 +107,9 @@ const PersonalStatsDashboard = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ fontSize: 40, lineHeight: 1 }}>{badge.emoji}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, borderRadius: 12, background: `${badge.color}15` }}>
+            <badge.icon size={28} color={badge.color} />
+          </div>
           <div>
             <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
               Your Badge
@@ -119,7 +121,7 @@ const PersonalStatsDashboard = () => {
                 ? `${50 - stats.points} pts to Eco Starter`
                 : stats.points < 150
                 ? `${150 - stats.points} pts to Smart Validator`
-                : 'Max badge achieved! 🎉'}
+                : 'Max badge achieved!'}
             </div>
           </div>
         </div>
@@ -141,8 +143,19 @@ const PersonalStatsDashboard = () => {
         </div>
       </div>
 
+      {/* ── Feature 7: Peak Time Personal Alerts ── */}
+      {stats.peakAlert && (
+        <div className="card" style={{ background: '#FEF3C7', border: '1px solid #F59E0B', marginBottom: '1rem', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <AlertTriangle size={24} color="#D97706" />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#92400E' }}>Traffic Alert</div>
+            <div style={{ fontSize: 13, color: '#B45309', marginTop: 2 }}>{stats.peakAlert}</div>
+          </div>
+        </div>
+      )}
+
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+      <div className="grid-2" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
         <StatCard icon={Navigation} label="Total Trips" value={stats.totalTrips} color="#5BCAF5" />
         <StatCard icon={MapPin} label="Distance Covered" value={`${stats.totalDistanceKm} km`} color="#F5F230" />
         <StatCard
@@ -205,9 +218,8 @@ const PersonalStatsDashboard = () => {
           </div>
 
           <div
+            className="grid-2"
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
               gap: '0.75rem',
               marginBottom: '1rem'
             }}
@@ -229,7 +241,7 @@ const PersonalStatsDashboard = () => {
 
           <div className="card" style={{ marginBottom: '1rem' }}>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-              💨 Weekly Carbon: {(weekly.weeklyCarbonGrams / 1000).toFixed(2)} kg CO₂
+              Weekly Carbon: {(weekly.weeklyCarbonGrams / 1000).toFixed(2)} kg CO₂
             </div>
             <div style={{ fontSize: 12, color: '#777' }}>
               "{weekly.totalTripsThisWeek} trips made this week"
@@ -256,7 +268,9 @@ const PersonalStatsDashboard = () => {
       {/* ── Feature 8: Frequent Locations ── */}
       {stats.frequentLocations?.length > 0 && (
         <div className="card" style={{ marginTop: '1rem' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>📍 Frequent Locations</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <MapPin size={16} /> Frequent Locations
+          </div>
           <div className="stack">
             {stats.frequentLocations.map((loc, i) => (
               <div

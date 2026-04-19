@@ -5,7 +5,7 @@ import {
   Users, Navigation, Map, TrendingUp, Download, BarChart3,
   Zap, BookOpen, Route, Cpu, ShieldCheck, Activity,
   ArrowUpRight, ArrowRight, CheckCircle, Clock, Leaf,
-  Car, Bus, Bike, RefreshCw, LayoutDashboard, ListTodo, Globe
+  Car, Bus, Bike, RefreshCw, LayoutDashboard, ListTodo, Globe, AlertTriangle
 } from 'lucide-react';
 import { MapContainer, TileLayer, CircleMarker, Popup, Polyline } from 'react-leaflet';
 import { useAuthentication } from '../context/AuthContext';
@@ -270,7 +270,7 @@ const ScientistDashboard = () => {
       <div className="page-header" style={{ marginBottom: '1.75rem' }}>
         <div>
           <h1 className="page-title">
-            Welcome back, {currentUser?.fullName?.split(' ')[0]} 👋
+            Welcome back, {currentUser?.fullName?.split(' ')[0]}
           </h1>
           <p className="page-subtitle">
             {isCitizen
@@ -297,11 +297,11 @@ const ScientistDashboard = () => {
       {/* ── HERO BANNER ── */}
       <div style={{
         borderRadius: 22, padding: '36px 36px', marginBottom: '2rem',
-        background: 'linear-gradient(135deg, #0B4D3B 0%, #0F6148 40%, #1A7A5E 100%)',
+        background: 'linear-gradient(135deg, #111111 0%, #1A1A1A 40%, #2A2A2A 100%)',
         position: 'relative', overflow: 'hidden',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
         gap: 24, flexWrap: 'wrap',
-        boxShadow: '0 20px 60px rgba(11,77,59,0.35)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
       }}>
         {/* decorative orbs */}
         <div style={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, background: '#F5F230', opacity: 0.07, borderRadius: '50%', filter: 'blur(70px)', pointerEvents: 'none' }} />
@@ -654,11 +654,11 @@ const ScientistDashboard = () => {
                                   <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
                                   <strong style={{ color: '#111', fontSize: 14 }}>Trip #{tripNum} · {mode}</strong>
                                 </div>
-                                <div style={{ fontSize: 13, color: '#333', marginBottom: 3 }}>🟢 Start: {trip.originCoordinates?.name || 'Origin'}</div>
-                                <div style={{ fontSize: 13, color: '#333', marginBottom: 6 }}>🔴 End: {trip.destinationCoordinates?.name || 'Destination'}</div>
+                                <div style={{ fontSize: 13, color: '#333', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{width: 8, height: 8, borderRadius: '50%', background: '#34D399'}}></span> Start: {trip.originCoordinates?.name || 'Origin'}</div>
+                                <div style={{ fontSize: 13, color: '#333', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{width: 8, height: 8, borderRadius: '50%', background: '#E24B4A'}}></span> End: {trip.destinationCoordinates?.name || 'Destination'}</div>
                                 <div style={{ fontSize: 12, color: '#888', borderTop: '1px solid #EEE', paddingTop: 6 }}>
                                   {fmtDate(trip.tripRecordCreatedAt)} · {fmtDist(trip.totalDistance || 0)}
-                                  {isGPS ? ' · 📍 GPS tracked' : ' · ↗ Simulated'}
+                                  {isGPS ? ' · GPS tracked' : ' · Simulated'}
                                 </div>
                               </div>
                             </Popup>
@@ -684,6 +684,30 @@ const ScientistDashboard = () => {
                       </React.Fragment>
                     );
                   })}
+
+                  {/* Feature 6: Issue Clustering (High Issue Zones) */}
+                  {!isCitizen && dashboardData?.highIssueZones?.map((zone, i) => (
+                    <CircleMarker
+                      key={`zone-${i}`}
+                      center={[zone.lat, zone.lng]}
+                      radius={15 + Math.min(zone.count, 20)}
+                      pathOptions={{ color: '#EF4444', fillColor: '#EF4444', fillOpacity: 0.4, weight: 2, dashArray: '4 4' }}
+                    >
+                      <Popup>
+                        <div style={{ fontFamily: 'inherit', minWidth: 160 }}>
+                          <strong style={{ color: '#991B1B', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <AlertTriangle size={14} /> High Issue Zone
+                          </strong>
+                          <div style={{ fontSize: 13, color: '#444', marginTop: 4 }}>
+                            {zone.count} issues reported here.
+                          </div>
+                          <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+                            Types: {zone.types.join(', ')}
+                          </div>
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+                  ))}
                 </MapContainer>
               )
             ) : (

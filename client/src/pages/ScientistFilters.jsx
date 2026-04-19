@@ -28,6 +28,8 @@ const ScientistFilters = () => {
   const [endDate, setEndDate] = useState('');
   const [mode, setMode] = useState('');
   const [timeOfDay, setTimeOfDay] = useState('');
+  const [tripPurpose, setTripPurpose] = useState('');
+  const [minConfidence, setMinConfidence] = useState('');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [aiStats, setAiStats] = useState(null);
@@ -40,6 +42,8 @@ const ScientistFilters = () => {
       if (endDate) params.endDate = endDate;
       if (mode) params.mode = mode;
       if (timeOfDay) params.timeOfDay = timeOfDay;
+      if (tripPurpose) params.tripPurpose = tripPurpose;
+      if (minConfidence) params.minConfidence = minConfidence;
 
       const res = await axios.get(`${API}/api/analytics/filtered-trips`, {
         headers: { Authorization: `Bearer ${token()}` },
@@ -51,7 +55,7 @@ const ScientistFilters = () => {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, mode, timeOfDay]);
+  }, [startDate, endDate, mode, timeOfDay, tripPurpose, minConfidence]);
 
   // Feature 7: Load AI accuracy on mount
   useEffect(() => {
@@ -74,6 +78,8 @@ const ScientistFilters = () => {
     setEndDate('');
     setMode('');
     setTimeOfDay('');
+    setTripPurpose('');
+    setMinConfidence('');
   };
 
   return (
@@ -178,6 +184,25 @@ const ScientistFilters = () => {
           </div>
         </div>
 
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div className="field">
+            <label>Trip Purpose</label>
+            <select value={tripPurpose} onChange={(e) => setTripPurpose(e.target.value)}>
+              <option value="">All Purposes</option>
+              <option value="Work">Work</option>
+              <option value="Education">Education</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Return Home">Return Home</option>
+              <option value="Social / Recreation">Social / Recreation</option>
+              <option value="Medical">Medical</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Min Confidence Score (%)</label>
+            <input type="number" min="0" max="100" placeholder="e.g. 80" value={minConfidence} onChange={(e) => setMinConfidence(e.target.value)} />
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={fetchFiltered} className="btn-primary" style={{ flex: 1 }} disabled={loading}>
             {loading ? 'Loading...' : 'Apply Filters'}
@@ -245,7 +270,7 @@ const ScientistFilters = () => {
                 <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      {['Date', 'Mode', 'Distance', 'Carbon', 'Status'].map((h) => (
+                      {['Date', 'Mode', 'Distance', 'Purpose', 'Data Score', 'Efficiency', 'Status'].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: '6px 8px', color: '#888', fontWeight: 500 }}>{h}</th>
                       ))}
                     </tr>
@@ -263,7 +288,13 @@ const ScientistFilters = () => {
                           {trip.totalDistance ? `${(trip.totalDistance / 1000).toFixed(1)} km` : '—'}
                         </td>
                         <td style={{ padding: '8px', color: '#555' }}>
-                          {trip.carbonEmissionGrams ? `${trip.carbonEmissionGrams}g` : '—'}
+                          {trip.tripPurpose || '—'}
+                        </td>
+                        <td style={{ padding: '8px', color: '#555' }}>
+                          {trip.dataConfidenceScore ? `${trip.dataConfidenceScore}%` : '—'}
+                        </td>
+                        <td style={{ padding: '8px', color: '#555' }}>
+                          {trip.efficiencyScore ? `${trip.efficiencyScore}%` : '—'}
                         </td>
                         <td style={{ padding: '8px' }}>
                           <span

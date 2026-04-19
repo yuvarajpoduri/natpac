@@ -69,7 +69,7 @@ const AdvancedAnalytics = () => {
       </div>
 
       {/* Stat Cards */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="stats-grid" style={{ marginBottom: '1.5rem' }}>
         <div className="card">
           <div className="card-label"><Route size={13} /> Avg Distance</div>
           <div className="stat-value">{averageMetrics.averageDistanceKm}</div>

@@ -1,10 +1,24 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Navigation, Clock, MapPin, CheckCircle, ChevronRight, X, Cpu, Leaf, Tag, Play
+  Navigation, Clock, MapPin, CheckCircle, ChevronRight, X, Cpu, Leaf, Tag, Play,
+  Car, Bus, Bike, Activity, Train, Ship, AlertTriangle, Timer, Zap, ShieldAlert
 } from 'lucide-react';
 import { MapContainer, TileLayer, CircleMarker, Polyline } from 'react-leaflet';
 import TripReplayMap from './TripReplayMap';
+
+const getModeIcon = (mode) => {
+  switch (mode) {
+    case 'Car': return Car;
+    case 'Auto-Rickshaw': return Car;
+    case 'Bus': return Bus;
+    case 'Cycling': return Bike;
+    case 'Walking': return Activity;
+    case 'Train': return Train;
+    case 'Ferry': return Ship;
+    default: return Navigation;
+  }
+};
 
 const tripPurposes = ['Work', 'Education', 'Shopping', 'Social / Recreation', 'Medical', 'Return Home'];
 const travelModes  = ['Walking', 'Cycling', 'Car', 'Bus', 'Auto-Rickshaw', 'Train', 'Ferry'];
@@ -18,7 +32,7 @@ const carbonLabel = (mode, distMetres) => {
   if (!distMetres || !mode) return null;
   const factor = EMISSION_FACTORS[mode] ?? 120;
   const grams = Math.round((distMetres / 1000) * factor);
-  if (grams === 0) return '0g CO₂ 🌱';
+  if (grams === 0) return '0g CO₂';
   return `${grams}g CO₂`;
 };
 
@@ -62,7 +76,15 @@ const TravelDiary = () => {
   const openValidationModal = (trip) => {
     setSelectedTrip(trip);
     setValidatedMode(trip.userValidatedMode || trip.aiPredictedMode || 'Car');
-    setTripPurpose(trip.tripPurpose || 'Work');
+    
+    const validPurposes = ['Work', 'Education', 'Shopping', 'Social / Recreation', 'Medical', 'Return Home'];
+    let initialPurpose = trip.tripPurpose || trip.predictedPurpose || 'Work';
+    if (!validPurposes.includes(initialPurpose)) {
+      if (initialPurpose === 'Work/Education') initialPurpose = 'Work';
+      else if (initialPurpose === 'Shopping/Errands') initialPurpose = 'Shopping';
+      else initialPurpose = 'Work';
+    }
+    setTripPurpose(initialPurpose);
   };
 
   const handleValidateSubmission = async (e) => {
@@ -170,7 +192,7 @@ const TravelDiary = () => {
             return (
               <div key={trip._id} className="trip-card" onClick={() => openValidationModal(trip)}>
                 <div className={`trip-icon${trip.isTripValidated ? ' validated' : ''}`}>
-                  <Navigation size={18} />
+                  {React.createElement(getModeIcon(displayMode), { size: 18 })}
                 </div>
 
                 <div className="trip-info">
@@ -181,10 +203,15 @@ const TravelDiary = () => {
                         <CheckCircle size={10} /> Validated
                       </span>
                     )}
-                    {/* Feature 1: confidence badge */}
-                    {trip.aiConfidenceScore != null && !trip.isTripValidated && (
+                    {/* Feature 1: confidence badge & Feature 8: data confidence */}
+                    {!trip.isTripValidated && trip.dataConfidenceScore != null && (
                       <span className="badge badge-info" style={{ marginLeft: '0.5rem', verticalAlign: 'middle', fontSize: 10 }}>
-                        <Cpu size={9} /> {trip.aiConfidenceScore}%
+                        <Cpu size={9} /> Data Score: {trip.dataConfidenceScore}%
+                      </span>
+                    )}
+                    {trip.isAnomalous && (
+                      <span className="badge badge-danger" style={{ marginLeft: '0.5rem', verticalAlign: 'middle', fontSize: 10 }}>
+                        <AlertTriangle size={9} /> Anomaly Detected
                       </span>
                     )}
                   </div>
@@ -215,15 +242,56 @@ const TravelDiary = () => {
                       <span className="badge badge-brand">{trip.tripPurpose}</span>
                     )}
                     {!trip.isTripValidated && (
-                      <span className="badge badge-info">Needs Validation</span>
+                      <span className="badge badge-warning">AI Predicted: {trip.predictedPurpose || 'Unknown'}</span>
+                    )}
+                    
+                    {trip.habitLabel && (
+                      <span className="badge" style={{ background: '#E2E8F0', color: '#1E293B', fontSize: 10 }}>
+                        {trip.habitLabel}
+                      </span>
                     )}
 
-                    {/* Feature 9: Issue tags display */}
-                    {trip.issueTags?.map((tag) => (
+                    {/* Feature 3 & 4 & 10 */}
+                    {trip.stressLevel && (
+                      <span className="badge" style={{ background: trip.stressLevel === 'High' ? '#FEE2E2' : trip.stressLevel === 'Medium' ? '#FEF3C7' : '#DCFCE7', color: '#111', fontSize: 10 }}>
+                        Stress: {trip.stressLevel}
+                      </span>
+                    )}
+                    
+                    {trip.idleTimeSeconds > 120 && (
+                      <span className="badge" style={{ background: '#F3F4F6', color: '#4B5563', fontSize: 10 }}>
+                        <Timer size={10} style={{ marginRight: 2 }} /> {Math.round(trip.idleTimeSeconds / 60)}m delayed
+                      </span>
+                    )}
+                    
+                    {trip.efficiencyScore != null && (
+                      <span className="badge" style={{ background: '#E0E7FF', color: '#3730A3', fontSize: 10 }}>
+                        <Zap size={10} style={{ marginRight: 2 }} /> {trip.efficiencyScore}% Efficiency
+                      </span>
+                    )}
+
+                    {/* Smart Map Issue Visualization Summary */}
+                    {trip.issueEvents && trip.issueEvents.length > 0 && (
+                      <>
+                        {trip.issueEvents.filter(e => e.issueType === 'delay').length > 0 && (
+                          <span className="badge" style={{ background: '#FEF08A', color: '#854D0E', fontSize: 10 }}>
+                            <AlertTriangle size={10} style={{ marginRight: 2 }} /> {trip.issueEvents.filter(e => e.issueType === 'delay').length} Delays
+                          </span>
+                        )}
+                        {trip.issueEvents.filter(e => e.issueType === 'traffic').length > 0 && (
+                          <span className="badge" style={{ background: '#FECACA', color: '#991B1B', fontSize: 10 }}>
+                            <AlertTriangle size={10} style={{ marginRight: 2 }} /> {trip.issueEvents.filter(e => e.issueType === 'traffic').length} Traffic Zones
+                          </span>
+                        )}
+                      </>
+                    )}
+
+                    {/* Feature 9: Auto & Manual tags display */}
+                    {[...(trip.issueTags || []), ...(trip.autoTags || [])].map((tag) => (
                       <span
                         key={tag}
                         className="badge"
-                        style={{ background: TAG_COLORS[tag], color: TAG_TEXT[tag], fontSize: 10 }}
+                        style={{ background: TAG_COLORS[tag] || '#F1F5F9', color: TAG_TEXT[tag] || '#475569', fontSize: 10 }}
                       >
                         {tag}
                       </span>
@@ -288,14 +356,22 @@ const TravelDiary = () => {
 
             {/* Feature 1: AI prediction + confidence */}
             {selectedTrip.aiPredictedMode && (
-              <div className="modal-ai-hint">
+              <div className="modal-ai-hint" style={{ marginBottom: '0.75rem' }}>
                 <Cpu size={14} />
-                AI predicted: <strong style={{ marginLeft: '0.25rem' }}>{selectedTrip.aiPredictedMode}</strong>
+                AI Mode: <strong style={{ marginLeft: '0.25rem' }}>{selectedTrip.aiPredictedMode}</strong>
                 {selectedTrip.aiConfidenceScore != null && (
                   <span style={{ marginLeft: '0.4rem', fontSize: 12, color: '#888' }}>
                     ({selectedTrip.aiConfidenceScore}% confidence)
                   </span>
                 )}
+              </div>
+            )}
+            
+            {selectedTrip.predictedPurpose && !selectedTrip.isTripValidated && (
+              <div className="modal-ai-hint">
+                <Navigation size={14} />
+                AI Purpose: <strong style={{ marginLeft: '0.25rem' }}>{selectedTrip.predictedPurpose}</strong>
+                {selectedTrip.habitLabel && ` (${selectedTrip.habitLabel})`}
               </div>
             )}
 

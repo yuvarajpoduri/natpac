@@ -798,7 +798,7 @@ a { color: var(--text-primary); text-decoration: none; }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--card-gap);
   margin-bottom: var(--section-gap);
 }
@@ -1258,7 +1258,6 @@ a { color: var(--text-primary); text-decoration: none; }
   .page-title { font-size: 22px; }
   .page-subtitle { font-size: 13px; }
 
-  /* Stats: 1 col */
   .stats-grid {
     grid-template-columns: 1fr;
   }

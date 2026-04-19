@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, useMap, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { Play, Pause, RotateCcw, Navigation } from 'lucide-react';
+import { Play, Pause, RotateCcw, Navigation, AlertTriangle } from 'lucide-react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 // ── Moving marker icon ──
 const movingIcon = L.divIcon({
@@ -36,6 +37,25 @@ const destIcon = L.divIcon({
   iconSize: [14, 14],
   iconAnchor: [7, 7]
 });
+
+// Issue icons
+const createIssueIcon = (color) => L.divIcon({
+  className: '',
+  html: `<div style="
+    width:20px;height:20px;border-radius:50%;
+    background:${color};border:2px solid #fff;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.4)
+  "><span style="color:#fff;font-size:12px;font-weight:bold;">!</span></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
+
+const ISSUE_COLORS = {
+  traffic: '#EF4444', // red
+  delay: '#EAB308', // yellow
+  bad_road: '#92400E' // brown
+};
 
 // Auto-fit bounds helper
 const FitBounds = ({ points }) => {
@@ -97,6 +117,42 @@ const TripReplayMap = ({ trip, onClose }) => {
 
   const progress = rawPoints.length > 1 ? Math.round((markerIdx / (rawPoints.length - 1)) * 100) : 0;
 
+  // Segment logic
+  const segments = [];
+  let currentSegment = { color: '#3B82F6', points: [] }; // blue default
+  
+  if (trip.tripPoints && trip.tripPoints.length > 1 && trip.issueEvents && trip.issueEvents.length > 0) {
+    for (let i = 0; i < trip.tripPoints.length; i++) {
+      const pt = trip.tripPoints[i];
+      const ptTime = new Date(pt.timestamp).getTime();
+      let ptColor = '#3B82F6';
+      
+      for (const issue of trip.issueEvents) {
+        if (issue.issueType === 'bad_road') continue; // bad road is just a point marker usually, but we could color it. Let's color traffic and delay.
+        const issueStart = new Date(issue.timestamp).getTime();
+        const issueEnd = issueStart + (issue.durationSeconds * 1000);
+        if (ptTime >= issueStart && ptTime <= issueEnd) {
+          ptColor = ISSUE_COLORS[issue.issueType];
+          break;
+        }
+      }
+
+      if (currentSegment.color !== ptColor && currentSegment.points.length > 0) {
+        currentSegment.points.push([pt.latitude, pt.longitude]); // connect to next segment
+        segments.push(currentSegment);
+        currentSegment = { color: ptColor, points: [[pt.latitude, pt.longitude]] };
+      } else {
+        currentSegment.points.push([pt.latitude, pt.longitude]);
+      }
+    }
+    if (currentSegment.points.length > 0) segments.push(currentSegment);
+  } else {
+    segments.push({ color: '#3B82F6', points: rawPoints });
+  }
+
+  const delaysCount = (trip.issueEvents || []).filter(e => e.issueType === 'delay').length;
+  const trafficCount = (trip.issueEvents || []).filter(e => e.issueType === 'traffic').length;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Map */}
@@ -114,17 +170,38 @@ const TripReplayMap = ({ trip, onClose }) => {
           />
           <FitBounds points={rawPoints} />
 
-          {/* Full route line */}
-          <Polyline
-            positions={rawPoints}
-            pathOptions={{ color: '#dddddd', weight: 3, dashArray: '6 6' }}
-          />
+          {/* Segmented route line */}
+          {segments.map((seg, idx) => (
+            <Polyline
+              key={`seg-${idx}`}
+              positions={seg.points}
+              pathOptions={{ color: seg.color, weight: 4 }}
+            />
+          ))}
 
-          {/* Travelled portion */}
+          {/* Issue markers */}
+          {(trip.issueEvents || []).map((issue, idx) => {
+            if (!issue.latitude || !issue.longitude) return null;
+            const label = issue.issueType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return (
+              <Marker 
+                key={`issue-${idx}`} 
+                position={[issue.latitude, issue.longitude]} 
+                icon={createIssueIcon(ISSUE_COLORS[issue.issueType])}
+              >
+                <Popup>
+                  <div style={{fontWeight: 600}}>{label} Detected</div>
+                  {issue.durationSeconds > 0 && <div>Delay: {Math.round(issue.durationSeconds / 60)} minutes</div>}
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {/* Travelled portion (overlay) */}
           {markerIdx > 0 && (
             <Polyline
               positions={rawPoints.slice(0, markerIdx + 1)}
-              pathOptions={{ color: '#111111', weight: 3 }}
+              pathOptions={{ color: '#111111', weight: 5, opacity: 0.6 }}
             />
           )}
 
@@ -141,6 +218,20 @@ const TripReplayMap = ({ trip, onClose }) => {
 
       {/* Controls */}
       <div className="card" style={{ marginTop: '0.75rem', padding: '1rem' }}>
+        {/* Issue Summary */}
+        {(delaysCount > 0 || trafficCount > 0) && (
+          <div style={{ display: 'flex', gap: 12, marginBottom: '1rem', background: '#f8f9fa', padding: 10, borderRadius: 8 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>Total Delays</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: ISSUE_COLORS.delay }}>{delaysCount}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>Traffic Zones</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: ISSUE_COLORS.traffic }}>{trafficCount}</div>
+            </div>
+          </div>
+        )}
+
         {/* Slider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
           <Navigation size={14} color="#888" />
