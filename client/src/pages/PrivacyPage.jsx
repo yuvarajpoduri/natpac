@@ -1,10 +1,40 @@
-import { Shield, Eye, Lock, UserCheck, Database, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Shield, Eye, Lock, UserCheck, Database, ChevronRight, PauseCircle, PlayCircle, AlertTriangle } from 'lucide-react';
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('natpac_token')}` });
 
 /**
  * Feature 10: Privacy Information Page
- * Static page explaining data collection, anonymization, and usage.
+ * Shows data policy + live tracking pause/resume control.
  */
 const PrivacyPage = () => {
+  const [isPaused, setIsPaused] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/api/profile`, { headers: authHeader() })
+      .then(res => setIsPaused(res.data.data?.trackingPaused || false))
+      .catch(() => {});
+  }, []);
+
+  const handleToggleTracking = async () => {
+    setIsToggling(true);
+    try {
+      const res = await axios.patch(
+        `${API}/api/profile`,
+        { trackingPaused: !isPaused },
+        { headers: authHeader() }
+      );
+      setIsPaused(res.data.data?.trackingPaused ?? !isPaused);
+    } catch {
+      alert('Could not update tracking preference. Please try again.');
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
   const sections = [
     {
       icon: Database,
@@ -84,6 +114,49 @@ const PrivacyPage = () => {
             in Kerala.
           </div>
         </div>
+      </div>
+
+      {/* Tracking Control */}
+      <div className="card" style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem',
+        border: isPaused ? '1.5px solid #FCA5A5' : '1.5px solid #86EFAC',
+        background: isPaused ? '#FEF2F2' : '#F0FDF4',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1, minWidth: 200 }}>
+          {isPaused
+            ? <AlertTriangle size={22} color="#E24B4A" style={{ flexShrink: 0, marginTop: 1 }} />
+            : <Shield size={22} color="#16A34A" style={{ flexShrink: 0, marginTop: 1 }} />
+          }
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#111', marginBottom: 3 }}>
+              Data Collection: {isPaused ? '⏸ Paused' : '▶ Active'}
+            </div>
+            <div style={{ fontSize: 13, color: isPaused ? '#991B1B' : '#166534', lineHeight: 1.5 }}>
+              {isPaused
+                ? 'Your GPS data is NOT being collected. Resume anytime to contribute to NATPAC research.'
+                : 'Your journeys are being passively recorded and contributed to NATPAC transport research.'}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleToggleTracking}
+          disabled={isToggling}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px', borderRadius: 12,
+            background: isPaused ? '#16A34A' : '#E24B4A',
+            color: '#fff', border: 'none', cursor: isToggling ? 'default' : 'pointer',
+            fontWeight: 700, fontSize: 13, fontFamily: 'inherit',
+            opacity: isToggling ? 0.7 : 1, flexShrink: 0,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {isPaused
+            ? <><PlayCircle size={16} /> {isToggling ? 'Resuming…' : 'Resume Tracking'}</>
+            : <><PauseCircle size={16} /> {isToggling ? 'Pausing…' : 'Pause Tracking'}</>
+          }
+        </button>
       </div>
 
       {/* Sections */}

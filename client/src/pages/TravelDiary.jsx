@@ -184,7 +184,7 @@ const TravelDiary = () => {
           </div>
         </div>
       ) : (
-        <div className="stack">
+        <div className="trip-grid">
           {tripHistory.map((trip) => {
             const displayMode = trip.isTripValidated ? trip.userValidatedMode : trip.aiPredictedMode;
             const co2 = carbonLabel(displayMode, trip.totalDistance);

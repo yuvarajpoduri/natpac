@@ -22,10 +22,10 @@ const ProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/profile/me`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/profile`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      setProfileData(response.data);
+      setProfileData(response.data.data);
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {

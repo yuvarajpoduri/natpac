@@ -3,11 +3,22 @@ import { useAuthentication } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import './LoginPage.css';
 
+const CONSENT_TEXT = `By creating an account on Routelytics, you agree to allow the National Transportation Planning and Research Centre (NATPAC), under KSCSTE, Government of Kerala, to collect your GPS-based travel data through this application. Your data will be:
+
+• Anonymised before being displayed in the research dashboard
+• Used solely for transportation planning and research purposes
+• Protected by HTTPS/TLS encryption during transmission
+• Stored securely on MongoDB Atlas with access controls
+
+You may pause or stop data collection at any time using the Privacy Settings in your account. You may also request deletion of your data by contacting NATPAC.`;
+
 const SignupPage = () => {
   const [fullName, setFullName] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [userRole, setUserRole] = useState('citizen');
+  const [consentGiven, setConsentGiven] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { registerUser } = useAuthentication();
@@ -16,24 +27,34 @@ const SignupPage = () => {
   const handleSignupSubmission = async (event) => {
     event.preventDefault();
     setErrorMessage('');
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+    if (!consentGiven) {
+      setErrorMessage('You must read and accept the data collection consent to register.');
+      return;
+    }
+
     setIsSubmitting(true);
     const signupResult = await registerUser(fullName, emailAddress, password, userRole);
     setIsSubmitting(false);
     if (signupResult.success) {
       navigate('/dashboard');
     } else {
-      setErrorMessage(signupResult.message);
+      setErrorMessage(signupResult.message || 'Registration failed. Please try again.');
     }
-  };
-
-  const handleSkip = () => {
-    navigate('/dashboard');
   };
 
   return (
     <div className="login-page-wrapper">
-      <div className="login-card-frame" style={{ height: 'auto', minHeight: '600px' }}>
-        <div className="login-content" style={{ paddingBottom: '40px' }}>
+      <div className="login-card-frame">
+        <div className="login-content">
           <div className="login-brand-row">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="32" height="32" rx="8" fill="#F5F230"/>
@@ -46,35 +67,39 @@ const SignupPage = () => {
             <span className="login-brand-text">Routelytics</span>
           </div>
           
-          <h1 className="login-heading" style={{ fontSize: '42px', marginBottom: '30px' }}>Welcome,<br/>Join Us!</h1>
+          <h1 className="login-heading">Join<br/>Routelytics!</h1>
           
           <div className="login-tabs">
-            <Link to="/login" className="tab-muted" style={{ textDecoration: 'none' }}>I Am A Old User</Link>
+            <Link to="/login" className="tab-muted">Already a member</Link>
             <span className="tab-slash">/</span>
-            <span className="tab-active">Create New</span>
+            <span className="tab-active">Create Account</span>
           </div>
 
           {errorMessage && <div className="login-error">{errorMessage}</div>}
 
-          <form className="login-form" onSubmit={handleSignupSubmission} style={{ gap: '12px' }}>
+          <form className="login-form" onSubmit={handleSignupSubmission}>
             <div className="input-wrapper">
               <input
+                id="signup-name"
                 type="text"
                 className="input-field"
                 placeholder="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                autoComplete="name"
                 required
               />
             </div>
 
             <div className="input-wrapper">
               <input
+                id="signup-email"
                 type="email"
                 className="input-field"
                 placeholder="Email Address"
                 value={emailAddress}
                 onChange={(e) => setEmailAddress(e.target.value)}
+                autoComplete="email"
                 required
               />
               {emailAddress && (
@@ -88,42 +113,85 @@ const SignupPage = () => {
 
             <div className="input-wrapper">
               <input
+                id="signup-password"
                 type="password"
                 className="input-field"
-                placeholder="Password"
+                placeholder="Password (min. 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
                 required
               />
             </div>
 
             <div className="input-wrapper">
-              <select 
-                className="input-field" 
-                value={userRole} 
-                onChange={(e) => setUserRole(e.target.value)}
-                style={{ appearance: 'none' }}
-              >
-                <option value="citizen">Citizen User</option>
-                <option value="scientist">Scientist</option>
-              </select>
-              <div className="input-icon" style={{ pointerEvents: 'none', background: 'transparent', boxShadow: 'none' }}>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 9L12 15L18 9" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
+              <input
+                id="signup-confirm-password"
+                type="password"
+                className="input-field"
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
             </div>
 
-            <button type="submit" className="login-btn" disabled={isSubmitting} style={{ marginTop: '10px' }}>
+            <div className="input-wrapper">
+              <select
+                id="signup-role"
+                className="input-field"
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value)}
+              >
+                <option value="citizen">Citizen User (Data Provider)</option>
+                <option value="scientist">NATPAC Scientist / Planner</option>
+              </select>
+            </div>
+
+            {/* Consent Section */}
+            <div style={{
+              background: '#F8F8F8',
+              border: '1px solid #E0E0E0',
+              borderRadius: '12px',
+              padding: '0.875rem',
+              marginBottom: '0.75rem'
+            }}>
+              <p style={{ fontSize: '11px', color: '#666', lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-line' }}>
+                {CONSENT_TEXT}
+              </p>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', cursor: 'pointer' }}>
+                <input
+                  id="signup-consent"
+                  type="checkbox"
+                  checked={consentGiven}
+                  onChange={(e) => setConsentGiven(e.target.checked)}
+                  style={{ marginTop: '2px', flexShrink: 0, width: 16, height: 16, cursor: 'pointer', accentColor: '#111' }}
+                />
+                <span style={{ fontSize: '12px', color: '#333', fontWeight: 500, lineHeight: 1.5 }}>
+                  I have read and agree to the data collection terms above.
+                </span>
+              </label>
+            </div>
+
+            <button
+              id="signup-submit-btn"
+              type="submit"
+              className="login-btn"
+              disabled={isSubmitting || !consentGiven}
+              style={{ opacity: !consentGiven ? 0.6 : 1 }}
+            >
               {isSubmitting ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <div style={{ flex: 1 }}></div>
-
-          <button type="button" className="skip-btn" onClick={handleSkip} style={{ marginTop: '30px' }}>
-            Skip Now
-          </button>
+          <p style={{ textAlign: 'center', fontSize: '13px', color: '#888', marginTop: '1rem' }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: '#111', fontWeight: 600, textDecoration: 'none' }}>
+              Login now
+            </Link>
+          </p>
         </div>
       </div>
     </div>

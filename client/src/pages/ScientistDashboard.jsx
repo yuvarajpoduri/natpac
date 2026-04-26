@@ -91,20 +91,19 @@ const HeroBtn = ({ to, icon: Icon, children, primary }) => {
   return (
     <Link to={to} style={{
       display: 'inline-flex', alignItems: 'center', gap: 8,
-      padding: '0 22px', height: 46, borderRadius: 13,
+      padding: '0 22px', height: 44, borderRadius: 10,
       textDecoration: 'none', fontFamily: 'inherit',
       fontWeight: 700, fontSize: 14, cursor: 'pointer',
       transition: 'transform 0.15s, box-shadow 0.15s, background 0.15s',
       transform: hov ? 'translateY(-2px)' : 'none',
       ...(primary ? {
-        background: hov ? '#ffff00' : '#F5F230',
+        background: hov ? '#ffff1a' : '#F5F230',
         color: '#111111',
-        boxShadow: hov ? '0 10px 28px rgba(245,242,48,0.5)' : '0 4px 14px rgba(245,242,48,0.3)',
+        boxShadow: hov ? '0 8px 24px rgba(245,242,48,0.45)' : '0 4px 14px rgba(245,242,48,0.25)',
       } : {
-        background: hov ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.1)',
-        color: '#FFFFFF',
-        border: '1.5px solid rgba(255,255,255,0.3)',
-        backdropFilter: 'blur(6px)',
+        background: 'transparent',
+        color: 'rgba(255,255,255,0.85)',
+        border: '1.5px solid rgba(255,255,255,0.2)',
       }),
     }}
       onMouseEnter={() => setHov(true)}
@@ -295,28 +294,24 @@ const ScientistDashboard = () => {
       </div>
 
       {/* ── HERO BANNER ── */}
-      <div style={{
-        borderRadius: 22, padding: '36px 36px', marginBottom: '2rem',
-        background: 'linear-gradient(135deg, #111111 0%, #1A1A1A 40%, #2A2A2A 100%)',
-        position: 'relative', overflow: 'hidden',
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: 24, flexWrap: 'wrap',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-      }}>
-        {/* decorative orbs */}
-        <div style={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, background: '#F5F230', opacity: 0.07, borderRadius: '50%', filter: 'blur(70px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -30, left: 80, width: 220, height: 220, background: '#34D399', opacity: 0.1, borderRadius: '50%', filter: 'blur(55px)', pointerEvents: 'none' }} />
+      <div className="hero-banner">
+        {/* Yellow accent bar */}
+        <div className="hero-accent-bar" />
 
-        <div style={{ position: 'relative', zIndex: 2, flex: 1, minWidth: 0 }}>
-          <h2 style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 26, marginBottom: 10, letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-            {isCitizen ? 'Your Travel Dashboard' : 'Live Intelligence Platform'}
+        <div className="hero-left">
+          <div className="hero-eyebrow">
+            <span className="hero-dot" />
+            {isCitizen ? 'Live Tracking' : 'Research Platform'}
+          </div>
+          <h2 className="hero-title">
+            {isCitizen ? <>Your Travel<br/>Dashboard</> : <>Live Intelligence<br/>Platform</>}
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, maxWidth: 500, lineHeight: 1.7, marginBottom: 24 }}>
+          <p className="hero-desc">
             {isCitizen
-              ? 'Every journey you record shapes Kerala\'s transport future. Use GPS tracking for accurate data.'
-              : `${tripsCaptured.toLocaleString()} trips collected across ${districtsCovered}/14 districts. AI classifying at ${aiAccuracy}% accuracy.`}
+              ? "Every journey you record shapes Kerala's transport future."
+              : `${tripsCaptured.toLocaleString()} trips · ${districtsCovered}/14 districts · ${aiAccuracy}% AI accuracy`}
           </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="hero-actions">
             {isCitizen ? (
               <>
                 <HeroBtn to="/simulate" icon={Navigation} primary>Track a Trip</HeroBtn>
@@ -331,16 +326,15 @@ const ScientistDashboard = () => {
           </div>
         </div>
 
-        {/* Right side — mini stats strip */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+        <div className="hero-stats">
           {[
-            { label: 'Trips', value: tripsCaptured.toLocaleString(), color: '#F5F230' },
-            { label: 'Citizens', value: activeCitizens.toLocaleString(), color: '#5BCAF5' },
-            { label: 'AI Score', value: `${aiAccuracy}%`, color: '#34D399' },
+            { label: 'Trips Logged', value: tripsCaptured.toLocaleString(), accent: '#F5F230' },
+            { label: 'Active Users',  value: activeCitizens.toLocaleString(), accent: '#5BCAF5' },
+            { label: 'AI Accuracy',   value: `${aiAccuracy}%`,               accent: '#34D399' },
           ].map((s, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 20px', textAlign: 'right', backdropFilter: 'blur(8px)' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, letterSpacing: '-0.02em', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 3 }}>{s.label}</div>
+            <div key={i} className="hero-stat-chip">
+              <span className="hero-stat-value" style={{ color: s.accent }}>{s.value}</span>
+              <span className="hero-stat-label">{s.label}</span>
             </div>
           ))}
         </div>

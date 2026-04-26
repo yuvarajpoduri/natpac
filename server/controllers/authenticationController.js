@@ -6,19 +6,28 @@ const registerUser = async (request, response) => {
   try {
     const { fullName, emailAddress, password, userRole } = request.body;
 
-    const existingUser = await User.findOne({ emailAddress });
+    if (!fullName || !emailAddress || !password) {
+      return response.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (password.length < 8) {
+      return response.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
+    const existingUser = await User.findOne({ emailAddress: emailAddress.toLowerCase().trim() });
     if (existingUser) {
-      return response.status(400).json({ message: 'User already exists' });
+      return response.status(400).json({ message: 'An account with this email already exists' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      fullName,
-      emailAddress,
+      fullName: fullName.trim(),
+      emailAddress: emailAddress.toLowerCase().trim(),
       passwordHash,
-      userRole
+      userRole: userRole || 'citizen',
+      consentGiven: true  // User ticked the consent checkbox in SignupPage
     });
 
     await newUser.save();
@@ -26,10 +35,11 @@ const registerUser = async (request, response) => {
     const token = jwt.sign(
       { userId: newUser._id, userRole: newUser.userRole },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     response.status(201).json({
+      status: 'success',
       token,
       user: {
         id: newUser._id,
@@ -47,7 +57,11 @@ const loginUser = async (request, response) => {
   try {
     const { emailAddress, password } = request.body;
 
-    const foundUser = await User.findOne({ emailAddress });
+    if (!emailAddress || !password) {
+      return response.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const foundUser = await User.findOne({ emailAddress: emailAddress.toLowerCase().trim() });
     if (!foundUser) {
       return response.status(400).json({ message: 'Invalid credentials' });
     }
@@ -60,10 +74,11 @@ const loginUser = async (request, response) => {
     const token = jwt.sign(
       { userId: foundUser._id, userRole: foundUser.userRole },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     response.status(200).json({
+      status: 'success',
       token,
       user: {
         id: foundUser._id,

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Play, Navigation, MapPin, Gauge, Bus, Car, Bike,
-  Clock, Leaf, Square, Map, RotateCcw, Save, Wifi, WifiOff, RefreshCw, AlertTriangle
+  Clock, Leaf, Square, Map, RotateCcw, Save, Wifi, WifiOff, RefreshCw, AlertTriangle, CloudUpload, CheckCircle
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, CircleMarker } from 'react-leaflet';
 import { useBackgroundGPS } from '../hooks/useBackgroundGPS';
@@ -71,13 +71,14 @@ const ScenarioCard = ({ mode, dataKey, data, icon: Icon, selected, onSelect }) =
 };
 
 // ─── Status pill ─────────────────────────────────────────────────────────────
-const StatusPill = ({ status, pointCount }) => {
+const StatusPill = ({ status, pointCount, isOnline }) => {
   const configs = {
     idle:       { color: '#888', bg: '#F2F2F2', dot: false, text: 'Idle — Ready to Track'          },
     tracking:   { color: '#34D399', bg: '#F0FDF4', dot: true,  text: `Tracking… (${pointCount} pts)` },
     background: { color: '#F59E0B', bg: '#FFFBEB', dot: true,  text: `Background (${pointCount} pts saved)` },
-    processing: { color: '#5BCAF5', bg: '#EFF6FF', dot: false, text: 'Processing & saving…'          },
+    processing: { color: '#5BCAF5', bg: '#EFF6FF', dot: false, text: 'Processing…'                  },
     done:       { color: '#34D399', bg: '#F0FDF4', dot: false, text: 'Trip saved ✓'                 },
+    queued:     { color: '#F59E0B', bg: '#FFFBEB', dot: false, text: '📦 Trip saved offline — will sync when connected' },
     error:      { color: '#E24B4A', bg: '#FEF2F2', dot: false, text: 'GPS error — check permissions' }
   };
   const c = configs[status] || configs.idle;
@@ -94,7 +95,17 @@ const StatusPill = ({ status, pointCount }) => {
       )}
       {status === 'background' ? <WifiOff size={14} color={c.color} /> : null}
       {status === 'tracking'   ? <Wifi size={14} color={c.color} /> : null}
-      <span style={{ fontSize: '14px', color: c.color, fontWeight: 500 }}>{c.text}</span>
+      {status === 'queued'     ? <CloudUpload size={14} color={c.color} /> : null}
+      <span style={{ fontSize: '14px', color: c.color, fontWeight: 500, flex: 1 }}>{c.text}</span>
+      {/* Online/Offline pill */}
+      <span style={{
+        fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+        background: isOnline ? '#DCFCE7' : '#FEE2E2',
+        color: isOnline ? '#166534' : '#991B1B',
+        flexShrink: 0,
+      }}>
+        {isOnline ? '🟢 Online' : '🔴 Offline'}
+      </span>
     </div>
   );
 };
@@ -111,16 +122,20 @@ const TripSimulator = () => {
   const [selectedRouteKey, setSelectedRouteKey] = useState(null);
   const [isSaving, setIsSaving]                 = useState(false);
 
-  // Background GPS hook (handles SW, IndexedDB, restore, etc.)
+  // Background GPS hook (handles localStorage, SW, IndexedDB, restore, etc.)
   const {
     gpsPoints,
     isTracking,
     trackingStatus,
     isRestored,
+    isOnline,
+    pendingCount,
+    syncMessage,
     startTracking,
     stopAndSave,
     cancelTracking,
-    resumeTracking
+    resumeTracking,
+    syncNow,
   } = useBackgroundGPS();
 
   // If a session was restored from the SW after re-opening the app,
@@ -295,7 +310,7 @@ const TripSimulator = () => {
               <Navigation size={13} /> Live GPS Tracking
             </div>
 
-            <StatusPill status={trackingStatus} pointCount={gpsPoints.length} />
+          <StatusPill status={trackingStatus} pointCount={gpsPoints.length} isOnline={isOnline} />
 
             {/* ── Restored banner ── */}
             {isRestored && (
@@ -345,6 +360,49 @@ const TripSimulator = () => {
               >
                 Discard Trip
               </button>
+            )}
+
+            {/* Pending offline trips banner */}
+            {pendingCount > 0 && (
+              <div style={{
+                background: '#FFFBEB', border: '1.5px solid #F59E0B',
+                borderRadius: 12, padding: '0.875rem', marginBottom: '1rem',
+              }}>
+                <div style={{ fontSize: 13, color: '#92400E', fontWeight: 600, marginBottom: 6 }}>
+                  📦 {pendingCount} trip{pendingCount > 1 ? 's' : ''} saved offline
+                </div>
+                <div style={{ fontSize: 12, color: '#92400E', marginBottom: 10, lineHeight: 1.5 }}>
+                  {isOnline
+                    ? 'You are online — tap Sync Now to upload to your Travel Diary.'
+                    : 'You are offline. Trips will auto-sync when you reconnect.'}
+                </div>
+                {isOnline && (
+                  <button
+                    onClick={syncNow}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '8px 14px', borderRadius: 10,
+                      background: '#111', color: '#F5F230',
+                      border: 'none', cursor: 'pointer',
+                      fontWeight: 700, fontSize: 12, fontFamily: 'inherit',
+                    }}
+                  >
+                    <CloudUpload size={14} /> Sync Now
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Sync result message */}
+            {syncMessage && (
+              <div style={{
+                fontSize: 13, color: '#16A34A', background: '#F0FDF4',
+                border: '1px solid #86EFAC', borderRadius: 10,
+                padding: '0.6rem 0.875rem', marginBottom: '1rem',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <CheckCircle size={14} /> {syncMessage}
+              </div>
             )}
 
             {trackingStatus === 'done' && (

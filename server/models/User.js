@@ -24,6 +24,15 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Privacy controls (report requirement)
+  consentGiven: {
+    type: Boolean,
+    default: false
+  },
+  trackingPaused: {
+    type: Boolean,
+    default: false
+  },
   // Feature 8: Frequent location labels stored per user
   frequentLocations: [{
     latitude: Number,

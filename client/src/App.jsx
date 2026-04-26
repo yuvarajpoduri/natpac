@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } f
 import { AuthenticationProvider, useAuthentication } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import LandingPage from './pages/LandingPage';
 import TravelDiary from './pages/TravelDiary';
 import ScientistDashboard from './pages/ScientistDashboard';
 import TripSimulator from './pages/TripSimulator';
@@ -57,13 +58,14 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!currentUser) return <Navigate to="/login" />;
+  if (!currentUser) return <Navigate to="/" />;
   return children;
 };
 
 const MainLayout = ({ children }) => {
   const { currentUser, logoutUser } = useAuthentication();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const location = useLocation();
 
   useEffect(() => { setIsMenuOpen(false); }, [location.pathname]);
@@ -73,13 +75,35 @@ const MainLayout = ({ children }) => {
     return () => { document.body.style.overflow = ''; };
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    const on  = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener('online',  on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
+  const [pendingCount, setPendingCount] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rl_pending_trips') || '[]').length; } catch { return 0; }
+  });
+
+  // Re-check pending count when tab regains focus or goes online
+  useEffect(() => {
+    const refresh = () => {
+      try { setPendingCount(JSON.parse(localStorage.getItem('rl_pending_trips') || '[]').length); } catch {}
+    };
+    window.addEventListener('focus',  refresh);
+    window.addEventListener('online', refresh);
+    return () => { window.removeEventListener('focus', refresh); window.removeEventListener('online', refresh); };
+  }, []);
+
   const navItems = [{ to: '/dashboard', label: 'Dashboard' }];
 
   if (currentUser.userRole === 'citizen') {
     navItems.push(
-      { to: '/diary', label: 'Travel Diary' },
-      { to: '/simulate', label: 'Trip Simulator' },
-      { to: '/my-stats', label: 'My Stats' }           // Feature 2 + 3 + 5 + 8
+      { to: '/diary',    label: 'Travel Diary' },
+      { to: '/simulate', label: 'Trip Simulator', badge: pendingCount > 0 ? pendingCount : null },
+      { to: '/my-stats', label: 'My Stats' },
     );
   }
 
@@ -115,6 +139,37 @@ const MainLayout = ({ children }) => {
             <span className="topbar-logo-text">Routelytics</span>
           </Link>
 
+          <nav className="desktop-nav">
+            {navItems.map(({ to, label, badge }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`desktop-nav-link${location.pathname === to ? ' active' : ''}`}
+                style={{ position: 'relative' }}
+              >
+                {label}
+                {badge && (
+                  <span style={{
+                    position: 'absolute', top: -6, right: -10,
+                    background: '#F5F230', color: '#111',
+                    borderRadius: '50%', width: 16, height: 16,
+                    fontSize: 10, fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    lineHeight: 1,
+                  }}>{badge}</span>
+                )}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="desktop-user">
+            <div className="avatar avatar-sm">{initials}</div>
+            <span className="desktop-user-name">{currentUser.fullName}</span>
+            <button className="desktop-logout-btn" onClick={logoutUser} title="Sign out">
+              <LogOut size={16} />
+            </button>
+          </div>
+
           <button
             className="topbar-menu-btn"
             onClick={() => setIsMenuOpen(true)}
@@ -125,6 +180,19 @@ const MainLayout = ({ children }) => {
         </div>
       </header>
 
+      {/* ── Offline Banner ── */}
+      {!isOnline && (
+        <div style={{
+          background: '#78350F', color: '#FDE68A',
+          padding: '8px 16px', textAlign: 'center',
+          fontSize: '13px', fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          position: 'sticky', top: 56, zIndex: 90,
+        }}>
+          <span>📴</span>
+          You are offline — GPS tracking continues and trips are saved locally. They'll sync automatically when you reconnect.
+        </div>
+      )}
       {/* ── Full-Screen Overlay Menu ── */}
       <div className={`fullscreen-menu${isMenuOpen ? ' open' : ''}`}>
         <div className="menu-top-row">
@@ -139,14 +207,23 @@ const MainLayout = ({ children }) => {
         </div>
 
         <nav className="menu-nav">
-          {navItems.map(({ to, label }) => (
+          {navItems.map(({ to, label, badge }) => (
             <Link
               key={to}
               to={to}
               className={`menu-nav-link${location.pathname === to ? ' active' : ''}`}
               onClick={() => setIsMenuOpen(false)}
             >
-              <span className="menu-nav-label">{label}</span>
+              <span className="menu-nav-label">
+                {label}
+                {badge && (
+                  <span style={{
+                    background: '#F5F230', color: '#111',
+                    borderRadius: 99, padding: '1px 6px',
+                    fontSize: 10, fontWeight: 800, marginLeft: 6,
+                  }}>{badge}</span>
+                )}
+              </span>
               {location.pathname === to && <span className="menu-nav-dot" />}
             </Link>
           ))}
@@ -179,6 +256,8 @@ function App() {
     <AuthenticationProvider>
       <Router>
         <Routes>
+          {/* Public landing page */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
 
@@ -206,7 +285,8 @@ function App() {
           <Route path="/export" element={<ProtectedRoute><MainLayout><DataExport /></MainLayout></ProtectedRoute>} />
           <Route path="/system" element={<ProtectedRoute><MainLayout><SystemHealth /></MainLayout></ProtectedRoute>} />
 
-          <Route path="/" element={<Navigate to="/login" />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     </AuthenticationProvider>

@@ -1,25 +1,35 @@
 /**
- * Routelytics Background GPS Service Worker
+ * Routelytics Background GPS Service Worker v2
  *
- * Architecture:
- * - GPS runs on the main thread (browser restriction — Geolocation API is not
- *   available in Service Workers).
- * - Each GPS point is posted HERE via postMessage and persisted in IndexedDB.
- * - When the page is closed while tracking is active, this SW receives a
- *   'TAB_CLOSING' message and schedules a Background Sync tag so the trip is
- *   saved automatically when connectivity is available.
- * - On 'sync' event, we read IndexedDB and POST the trip to the backend.
- * - A persistent notification is shown while tracking so the user knows
- *   tracking is still running.
+ * OFFLINE-FIRST ARCHITECTURE:
+ * ──────────────────────────────────────────────────────────────────────────
+ * PRIMARY storage:  localStorage (main thread — works in all browsers)
+ * BACKUP  storage:  IndexedDB   (this SW — for when tab is killed/crashed)
+ *
+ * Flow:
+ *   1. Main thread (useBackgroundGPS hook) writes GPS points to localStorage.
+ *   2. Each point is ALSO posted here via postMessage → stored in IndexedDB.
+ *   3. On "Stop & Save":
+ *      - If ONLINE  → hook POSTs trip immediately, clears localStorage.
+ *      - If OFFLINE → hook queues trip in localStorage 'rl_pending_trips',
+ *                     sends TAB_CLOSING here → Background Sync registered.
+ *   4. Background Sync fires when connectivity restores → reads IndexedDB
+ *      and POSTs trip from the SW (handles tab-killed scenario).
+ *   5. On page reload → SW sends STORED_POINTS back to re-open tab.
+ *   6. A persistent notification shows while tracking is active.
+ *
+ * iOS Safari note: Background Sync API is NOT supported on iOS.
+ *   The localStorage queue + 'online' event in the main thread handles
+ *   iOS offline sync without needing the SW.
  */
 
-const DB_NAME   = 'routelytics_gps';
-const DB_VER    = 1;
-const STORE     = 'gps_points';
-const META_STORE= 'trip_meta';
-const SYNC_TAG  = 'flush-gps-trip';
+const DB_NAME    = 'routelytics_gps';
+const DB_VER     = 2;
+const STORE      = 'gps_points';
+const META_STORE = 'trip_meta';
+const SYNC_TAG   = 'flush-gps-trip';
 
-// ─── IndexedDB helpers ───────────────────────────────────────────────────────
+// ─── IndexedDB helpers ────────────────────────────────────────────────────────
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -55,7 +65,7 @@ async function getAllPoints() {
     const tx    = db.transaction(STORE, 'readonly');
     const store = tx.objectStore(STORE);
     const req   = store.getAll();
-    req.onsuccess = (e) => resolve(e.target.result);
+    req.onsuccess = (e) => resolve(e.target.result || []);
     req.onerror   = (e) => reject(e.target.error);
   });
 }
@@ -93,7 +103,7 @@ async function getMeta(key) {
   });
 }
 
-// ─── Haversine (used in SW to compute trip stats before posting) ─────────────
+// ─── Haversine ────────────────────────────────────────────────────────────────
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R   = 6371000;
@@ -106,48 +116,65 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ─── Notification helper ─────────────────────────────────────────────────────
+// ─── Notifications ────────────────────────────────────────────────────────────
 
 async function showTrackingNotification(pointCount) {
-  const opts = {
-    body: `${pointCount} GPS point${pointCount !== 1 ? 's' : ''} captured — tap to open Routelytics`,
-    icon:  '/routelytics-icon.svg',
-    badge: '/routelytics-icon.svg',
-    tag:   'gps-tracking',          // replaces previous notification
-    renotify: false,
-    silent: true,
-    requireInteraction: true,       // stays visible until dismissed
-    actions: [
-      { action: 'stop', title: '⏹ Stop & Save' },
-      { action: 'open', title: '↗ Open App'    }
-    ]
-  };
-  await self.registration.showNotification('📍 Routelytics — Tracking Active', opts);
+  try {
+    await self.registration.showNotification('📍 Routelytics — Tracking Active', {
+      body:   `${pointCount} GPS point${pointCount !== 1 ? 's' : ''} recorded — trip saved locally`,
+      icon:   '/routelytics-icon.svg',
+      badge:  '/routelytics-icon.svg',
+      tag:    'gps-tracking',
+      renotify: false,
+      silent: true,
+      requireInteraction: true,
+      actions: [
+        { action: 'stop', title: '⏹ Stop & Save' },
+        { action: 'open', title: '↗ Open App'    },
+      ],
+    });
+  } catch (e) {
+    // Notification permission not granted — silent fail
+    console.log('[SW] Notification suppressed:', e.message);
+  }
 }
 
-async function showSavedNotification() {
-  await self.registration.showNotification('✅ Routelytics — Trip Saved', {
-    body:  'Your journey has been saved to the Travel Diary.',
-    icon:  '/routelytics-icon.svg',
-    tag:   'gps-tracking',
-    silent: false
-  });
+async function showSavedNotification(isOffline = false) {
+  try {
+    await self.registration.showNotification(
+      isOffline ? '📦 Routelytics — Trip Saved Locally' : '✅ Routelytics — Trip Synced',
+      {
+        body:   isOffline
+          ? 'No connection — trip queued and will sync automatically when you go online.'
+          : 'Your journey has been uploaded to the Travel Diary.',
+        icon:   '/routelytics-icon.svg',
+        tag:    'gps-tracking',
+        silent: false,
+      }
+    );
+  } catch {}
 }
 
-// ─── Flush trip data to backend ──────────────────────────────────────────────
+// ─── Build + flush trip from IndexedDB → backend ─────────────────────────────
 
 async function flushTripToBackend() {
   const points = await getAllPoints();
   const token  = await getMeta('token');
   const apiUrl = await getMeta('apiUrl');
 
-  if (!points || points.length < 2 || !token) {
-    console.log('[SW] Not enough points or no token — skipping flush');
+  if (!points || points.length < 2) {
+    console.log('[SW] Not enough points — skipping flush');
     await clearPoints();
     return;
   }
 
-  // Filter low-accuracy points (> 40m)
+  if (!token) {
+    console.log('[SW] No auth token in IndexedDB — cannot flush');
+    await clearPoints();
+    return;
+  }
+
+  // Filter inaccurate points
   const valid = points.filter((p) => !p.accuracy || p.accuracy <= 40);
   if (valid.length < 2) {
     await clearPoints();
@@ -168,7 +195,7 @@ async function flushTripToBackend() {
     if (d > 5) {
       totalDist += d;
       const tSec = Math.max(1, (new Date(valid[i].timestamp) - new Date(prev.timestamp)) / 1000);
-      const spd  = (d / tSec) * 3.6; // km/h
+      const spd  = (d / tSec) * 3.6;
       speeds.push(spd);
       if (spd > maxSpd) maxSpd = spd;
       prev = valid[i];
@@ -183,96 +210,117 @@ async function flushTripToBackend() {
     averageSpeed:           parseFloat(avgSpd.toFixed(1)),
     maximumSpeed:           parseFloat(maxSpd.toFixed(1)),
     totalDistance:          Math.round(totalDist),
-    totalDurationSeconds:   durationSec
+    totalDurationSeconds:   durationSec,
   };
 
   const base = apiUrl || 'http://localhost:5000';
 
-  const res = await fetch(`${base}/api/trips`, {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(payload)
-  });
+  try {
+    const res = await fetch(`${base}/api/trips`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
-  if (res.ok) {
-    await clearPoints();
-    await saveMeta('trackingActive', false);
-    await showSavedNotification();
-    // Notify any open tabs that the trip was saved
-    const clients = await self.clients.matchAll({ type: 'window' });
-    clients.forEach((c) => c.postMessage({ type: 'TRIP_SAVED_BY_SW' }));
-  } else {
-    console.error('[SW] Backend rejected trip, keeping points for retry');
-    throw new Error('Backend error'); // causes Background Sync to retry
+    if (res.ok) {
+      await clearPoints();
+      await saveMeta('trackingActive', false);
+      await showSavedNotification(false);
+      // Notify any open tabs
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach((c) => c.postMessage({ type: 'TRIP_SAVED_BY_SW' }));
+    } else {
+      console.error('[SW] Backend rejected trip:', res.status);
+      throw new Error(`Backend ${res.status}`); // Causes BG Sync retry
+    }
+  } catch (e) {
+    if (e.name === 'TypeError') {
+      // Network error (offline) — show offline notification
+      await showSavedNotification(true);
+      await saveMeta('trackingActive', false);
+      // Don't clear points — keep for retry on next sync
+    }
+    throw e; // Re-throw so Background Sync retries
   }
 }
 
-// ─── Service Worker lifecycle ─────────────────────────────────────────────────
+// ─── SW Lifecycle ─────────────────────────────────────────────────────────────
 
 self.addEventListener('install',  () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
-// ─── Message handler (from main thread) ──────────────────────────────────────
+// ─── Message handler ──────────────────────────────────────────────────────────
 
 self.addEventListener('message', (event) => {
   const { type, payload } = event.data || {};
 
   switch (type) {
-    // A new GPS point arrived — persist it
+    // GPS point from main thread — mirror to IndexedDB
     case 'GPS_POINT':
       appendPoint(payload).then(async () => {
         const pts = await getAllPoints();
-        await showTrackingNotification(pts.length);
-      });
+        // Only update notification every 5 points (avoid notification spam)
+        if (pts.length % 5 === 0 || pts.length <= 2) {
+          await showTrackingNotification(pts.length).catch(() => {});
+        }
+      }).catch(console.error);
       break;
 
-    // Save auth token + API URL so background sync can authenticate
+    // Save auth + API URL to IndexedDB for background sync
     case 'SAVE_META':
-      saveMeta('token',  payload.token);
-      saveMeta('apiUrl', payload.apiUrl);
+      saveMeta('token',          payload.token);
+      saveMeta('apiUrl',         payload.apiUrl);
       saveMeta('trackingActive', true);
       break;
 
-    // User explicitly stopped tracking from within the app
+    // User tapped Stop — flush from IndexedDB
     case 'STOP_TRACKING':
       flushTripToBackend().catch(console.error);
       break;
 
-    // Page is closing while tracking — schedule background sync
+    // Tab closing while tracking — register Background Sync
     case 'TAB_CLOSING':
       saveMeta('trackingActive', true).then(() => {
-        self.registration.sync
-          ?.register(SYNC_TAG)
-          .catch((e) => {
-            // Background Sync not supported — try immediate fetch
-            console.warn('[SW] BG Sync not supported, flushing immediately', e);
-            flushTripToBackend().catch(console.error);
-          });
-      });
+        if (self.registration.sync) {
+          self.registration.sync
+            .register(SYNC_TAG)
+            .catch((e) => {
+              // Background Sync not supported (e.g. Firefox, iOS Safari)
+              // The localStorage queue in the main thread handles this case.
+              console.warn('[SW] BG Sync not supported:', e.message);
+            });
+        }
+      }).catch(console.error);
       break;
 
-    // Clear all stored data (user cancelled trip)
+    // User cancelled — clear everything
     case 'CANCEL_TRACKING':
-      clearPoints().then(() => {
-        saveMeta('trackingActive', false);
-        self.registration.getNotifications({ tag: 'gps-tracking' })
-          .then((notifs) => notifs.forEach((n) => n.close()));
-      });
+      clearPoints()
+        .then(() => saveMeta('trackingActive', false))
+        .then(() =>
+          self.registration.getNotifications({ tag: 'gps-tracking' })
+            .then((notifs) => notifs.forEach((n) => n.close()))
+        )
+        .catch(console.error);
       break;
 
-    // Restore in-progress trip data to a re-opened tab
+    // Main thread opened/restored — send back any stored points
     case 'GET_STORED_POINTS':
       Promise.all([getAllPoints(), getMeta('trackingActive')]).then(([pts, active]) => {
-        event.source?.postMessage({ type: 'STORED_POINTS', points: pts, isActive: active });
-      });
+        event.source?.postMessage({
+          type:     'STORED_POINTS',
+          points:   pts,
+          isActive: !!active,
+        });
+      }).catch(console.error);
       break;
   }
 });
 
-// ─── Background Sync ─────────────────────────────────────────────────────────
+// ─── Background Sync ──────────────────────────────────────────────────────────
 
 self.addEventListener('sync', (event) => {
   if (event.tag === SYNC_TAG) {
@@ -280,23 +328,61 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// ─── Notification action handler ─────────────────────────────────────────────
+// ─── Notification actions ─────────────────────────────────────────────────────
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   if (event.action === 'stop') {
-    // Flush trip, no need to open the page
-    event.waitUntil(flushTripToBackend());
+    event.waitUntil(flushTripToBackend().catch(console.error));
     return;
   }
 
-  // 'open' or clicking the notification body — focus or open the app
+  // 'open' or body click — focus or open the app
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      const existing = clients.find((c) => c.url.includes('/simulate'));
-      if (existing) return existing.focus();
-      return self.clients.openWindow('/simulate');
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        const existing = clients.find((c) => c.url.includes('/simulate'));
+        if (existing) return existing.focus();
+        return self.clients.openWindow('/simulate');
+      })
+  );
+});
+
+// ─── Fetch — network-first with offline fallback ──────────────────────────────
+// Only cache static assets. API calls are not cached.
+
+const CACHE_NAME = 'routelytics-shell-v2';
+const SHELL_URLS = ['/', '/index.html', '/manifest.json', '/routelytics-icon.svg'];
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Skip API calls entirely — handled by main thread with localStorage queue
+  if (url.pathname.startsWith('/api/')) return;
+
+  // For navigation requests — serve cached shell (SPA support offline)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match('/index.html') || caches.match('/')
+      )
+    );
+    return;
+  }
+
+  // Static assets — cache-first
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        // Cache shell URLs
+        if (SHELL_URLS.some((u) => url.pathname === u || url.pathname.endsWith(u))) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+        }
+        return response;
+      }).catch(() => cached || new Response('Offline', { status: 503 }));
     })
   );
 });

@@ -1,0 +1,52 @@
+## render.yaml — Routelytics multi-service deployment for Render
+## Deploy all 3 services from one repo.
+##
+## How to use:
+## 1. Push this repo to GitHub
+## 2. In Render Dashboard → New → Blueprint → select this repo
+## 3. Set the environment variable values marked as "sync: false" in the Render UI
+## 4. Deploy!
+##
+## After deploying:
+## - Copy the backend URL (e.g. https://routelytics-backend.onrender.com)
+##   and set it as VITE_API_URL in your Vercel frontend deployment.
+## - Copy the AI service URL and set it as AI_SERVICE_URL in the backend.
+
+services:
+  ## ── 1. Node.js Backend API ──────────────────────────────────────────────────
+  - type: web
+    name: routelytics-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false   # Set in Render Dashboard: your MongoDB Atlas connection string
+      - key: JWT_SECRET
+        sync: false   # Set in Render Dashboard: a long random secret
+      - key: AI_SERVICE_URL
+        sync: false   # Set AFTER deploying the AI service: https://routelytics-ai.onrender.com
+      - key: FRONTEND_URL
+        sync: false   # Set to your Vercel URL: https://your-app.vercel.app
+    healthCheckPath: /
+    autoDeploy: true
+
+  ## ── 2. Python AI Microservice ───────────────────────────────────────────────
+  - type: web
+    name: routelytics-ai
+    runtime: python
+    rootDir: ai_service
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /health
+    autoDeploy: true

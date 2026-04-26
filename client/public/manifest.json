@@ -1,0 +1,51 @@
+{
+  "name": "Routelytics — Kerala Travel Intelligence",
+  "short_name": "Routelytics",
+  "description": "AI-powered travel data collection and monitoring system for Kerala's transport planning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F5F230",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["travel", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/routelytics-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Track a Trip",
+      "short_name": "Track",
+      "description": "Start GPS recording your journey",
+      "url": "/simulate",
+      "icons": [{ "src": "/routelytics-icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Travel Diary",
+      "short_name": "Diary",
+      "description": "Review and validate your trips",
+      "url": "/diary",
+      "icons": [{ "src": "/routelytics-icon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
