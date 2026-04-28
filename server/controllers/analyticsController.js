@@ -6,6 +6,21 @@ const User = require('../models/User');
 const toObjectId = (id) => new mongoose.Types.ObjectId(id);
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC STATS — Landing Page
+// ─────────────────────────────────────────────────────────────────────────────
+const getPublicStats = async (request, response) => {
+  try {
+    const totalTrips = await Trip.countDocuments();
+    response.status(200).json({
+      status: 'success',
+      data: { tripsCaptured: totalTrips }
+    });
+  } catch (error) {
+    response.status(500).json({ message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SCIENTIST DASHBOARD — global stats
 // ─────────────────────────────────────────────────────────────────────────────
 const getDashboardAnalytics = async (request, response) => {
@@ -367,12 +382,27 @@ const getFilteredTrips = async (request, response) => {
       if (m) modeCounts[m] = (modeCounts[m] || 0) + 1;
     });
 
+    // Calculate peak hour from filtered trips (respecting IST timezone)
+    const hourCounts = new Array(24).fill(0);
+    trips.forEach(t => {
+      // Manual timezone offset for IST (+5:30)
+      const d = new Date(t.tripRecordCreatedAt);
+      const istDate = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+      const hr = istDate.getUTCHours();
+      hourCounts[hr]++;
+    });
+    const peakHr = hourCounts.indexOf(Math.max(...hourCounts));
+    const peakHourText = trips.length > 0 
+      ? `${peakHr % 12 || 12}:00 ${peakHr >= 12 ? 'PM' : 'AM'}` 
+      : 'N/A';
+
     response.status(200).json({
       status: 'success',
       data: {
         count: trips.length,
         totalDistanceKm: (totalDistance / 1000).toFixed(2),
         totalCarbonGrams: totalCarbon,
+        peakHour: peakHourText,
         modeSplit: Object.entries(modeCounts).map(([mode, count]) => ({ mode, count })),
         trips
       }
@@ -387,5 +417,6 @@ module.exports = {
   getPersonalStats,
   getWeeklySummary,
   getAiAccuracyStats,
-  getFilteredTrips
+  getFilteredTrips,
+  getPublicStats
 };

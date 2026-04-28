@@ -291,13 +291,9 @@ export function useBackgroundGPS() {
     };
   }, []);
 
-  // ─── Page visibility + beforeunload ──────────────────────────────────────
+  // ─── beforeunload ──────────────────────────────────────
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && isTracking) setTrackingStatus('background');
-      else if (!document.hidden && isTracking) setTrackingStatus('tracking');
-    };
     const handleBeforeUnload = () => {
       if (isTracking) {
         // Save meta for SW so it can flush when tab reopens
@@ -306,10 +302,8 @@ export function useBackgroundGPS() {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isTracking]);

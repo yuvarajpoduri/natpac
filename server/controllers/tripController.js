@@ -248,13 +248,18 @@ const validateTripDetail = async (request, response, next) => {
   try {
     const { tripId } = request.params;
     const { userValidatedMode, tripPurpose, travelCost, numberOfCompanions } = request.body;
+    console.log(`[Validation] TripID: ${tripId}, User: ${request.user.userId}`);
+    console.log(`[Validation] Body:`, request.body);
 
     const trip = await Trip.findOne({ _id: tripId, userId: request.user.userId });
     if (!trip) {
+      console.error(`[Validation] Trip not found or unauthorized. TripID: ${tripId}, UserID: ${request.user.userId}`);
       const err = new Error('Trip not found or unauthorized');
       err.status = 404;
       throw err;
     }
+
+    console.log(`[Validation] Found trip: ${trip._id}, Current Mode: ${trip.aiPredictedMode}`);
 
     // Feature 7: compare AI prediction vs user correction
     const aiPredictionCorrect = trip.aiPredictedMode === userValidatedMode;

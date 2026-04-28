@@ -1,5 +1,6 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
+const axios = require('axios');
 
 const buildFilterQuery = (query) => {
   const filter = {};
@@ -15,16 +16,18 @@ const buildFilterQuery = (query) => {
 };
 
 const mapTripToAnonymized = (trip, tripIndex) => ({
-  tripId: `TRIP-${String(tripIndex + 1).padStart(5, '0')}`,
-  anonymousUserId: `CITIZEN-${trip.userId?._id?.toString().slice(-6).toUpperCase() || 'UNKNOWN'}`,
+  tripId: trip._id,
+  userName: trip.userId?.fullName || 'Anonymous User',
   origin: {
     latitude: trip.originCoordinates?.latitude ? parseFloat(trip.originCoordinates.latitude.toFixed(3)) : null,
     longitude: trip.originCoordinates?.longitude ? parseFloat(trip.originCoordinates.longitude.toFixed(3)) : null,
+    name: trip.originCoordinates?.name || 'Unknown',
     timestamp: trip.originCoordinates?.timestamp || null
   },
   destination: {
     latitude: trip.destinationCoordinates?.latitude ? parseFloat(trip.destinationCoordinates.latitude.toFixed(3)) : null,
     longitude: trip.destinationCoordinates?.longitude ? parseFloat(trip.destinationCoordinates.longitude.toFixed(3)) : null,
+    name: trip.destinationCoordinates?.name || 'Unknown',
     timestamp: trip.destinationCoordinates?.timestamp || null
   },
   averageSpeedKmh: trip.averageSpeed,
@@ -69,7 +72,7 @@ const exportTripsAsCSV = async (request, response, next) => {
     const allTrips = await Trip.find(filter).populate('userId', 'fullName emailAddress userRole');
 
     const csvHeaders = [
-      'Trip ID', 'Anonymous User', 'Origin Lat', 'Origin Lng', 'Origin Time',
+      'Trip ID', 'User Name', 'Origin Lat', 'Origin Lng', 'Origin Time',
       'Dest Lat', 'Dest Lng', 'Dest Time', 'Avg Speed (km/h)', 'Max Speed (km/h)',
       'Distance (m)', 'Duration (s)', 'AI Predicted Mode', 'User Validated Mode',
       'Trip Purpose', 'Is Validated', 'Recorded At'
@@ -78,7 +81,7 @@ const exportTripsAsCSV = async (request, response, next) => {
     const csvRows = allTrips.map((trip, tripIndex) => {
       const a = mapTripToAnonymized(trip, tripIndex);
       return [
-        a.tripId, a.anonymousUserId,
+        a.tripId, a.userName,
         a.origin.latitude || '', a.origin.longitude || '', a.origin.timestamp ? new Date(a.origin.timestamp).toISOString() : '',
         a.destination.latitude || '', a.destination.longitude || '', a.destination.timestamp ? new Date(a.destination.timestamp).toISOString() : '',
         a.averageSpeedKmh || '', a.maximumSpeedKmh || '', a.totalDistanceMeters || '', a.totalDurationSeconds || '',
@@ -102,17 +105,19 @@ const getAdvancedAnalytics = async (request, response, next) => {
     const validatedCount = await Trip.countDocuments({ isTripValidated: true });
     const pendingCount = totalTrips - validatedCount;
 
+    // 1. Purpose Breakdown
     const purposeBreakdown = await Trip.aggregate([
       { $match: { isTripValidated: true, tripPurpose: { $exists: true, $ne: null } } },
       { $group: { _id: '$tripPurpose', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
+    // 2. Accurate Hourly Distribution & Peak Time
     const hourlyDistribution = await Trip.aggregate([
       { $match: { 'originCoordinates.timestamp': { $exists: true } } },
       {
         $group: {
-          _id: { $hour: '$originCoordinates.timestamp' },
+          _id: { $hour: { date: '$originCoordinates.timestamp', timezone: 'Asia/Kolkata' } },
           count: { $sum: 1 }
         }
       },
@@ -124,37 +129,68 @@ const getAdvancedAnalytics = async (request, response, next) => {
       return { hour: hourIndex, trips: matched ? matched.count : 0 };
     });
 
+    const peakHourResult = hourlyDistribution.reduce((a, b) => (a.count > b.count ? a : b), { _id: 0, count: 0 });
+    const peakHourText = `${peakHourResult._id % 12 || 12}:00 ${peakHourResult._id >= 12 ? 'PM' : 'AM'}`;
+
+    // 3. Average Metrics
     const averageDistanceResult = await Trip.aggregate([
       { $group: { _id: null, avgDistance: { $avg: '$totalDistance' }, avgSpeed: { $avg: '$averageSpeed' }, avgDuration: { $avg: '$totalDurationSeconds' } } }
     ]);
 
     const averageMetrics = averageDistanceResult[0] || { avgDistance: 0, avgSpeed: 0, avgDuration: 0 };
 
-    const dailyTrends = await Trip.aggregate([
+    // 4. Recent Trips for Calendar Drilldown
+    const startDate = new Date('2026-02-01');
+    const recentTrips = await Trip.find({ tripRecordCreatedAt: { $gte: startDate } })
+      .populate('userId', 'fullName')
+      .sort({ tripRecordCreatedAt: 1 });
+
+    const anonymizedRecent = recentTrips.map(mapTripToAnonymized);
+
+    // 5. Carbon Savings
+    const carbonSavingsByMode = await Trip.aggregate([
+      { $match: { isTripValidated: true } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$tripRecordCreatedAt' } },
-          count: { $sum: 1 }
+          _id: '$userValidatedMode',
+          actualEmissions: { $sum: '$carbonEmissionGrams' },
+          totalDistance: { $sum: '$totalDistance' }
         }
-      },
-      { $sort: { _id: 1 } },
-      { $limit: 30 }
+      }
     ]);
 
-    const peakHourData = hourlyDistribution.reduce((a,b) => a.count > b.count ? a : b, { count: 0 });
-    const topPurpose = purposeBreakdown.length > 0 ? purposeBreakdown[0] : null;
+    const processedCarbon = carbonSavingsByMode.map(m => {
+      const carBaseline = (m.totalDistance / 1000) * 120;
+      const saved = Math.max(0, Math.round(carBaseline - m.actualEmissions));
+      return { mode: m._id, saved, total: Math.round(carBaseline) };
+    }).filter(c => c.saved > 0).sort((a, b) => b.saved - a.saved);
 
+    // 6. Region Coverage
+    const regionCoverage = await Trip.aggregate([
+      { $match: { 'originCoordinates.name': { $exists: true, $ne: 'Unknown Location' } } },
+      { $group: { _id: '$originCoordinates.name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 4 }
+    ]);
+
+    const processedRegions = regionCoverage.map(r => ({
+      name: r._id,
+      count: r.count,
+      pct: totalTrips > 0 ? Math.round((r.count / totalTrips) * 100) : 0
+    }));
+
+    // 7. Dynamic Insights (Accurate Peak Hour)
     const insights = [];
-    if (peakHourData._id !== undefined) {
-      insights.push(`Peak travel occurs at ${peakHourData._id}:00, which accounts for the majority of the recorded traffic.`);
+    insights.push(`Peak mobility occurs at ${peakHourText}, accounting for ${peakHourResult.count} trip logs.`);
+    
+    if (purposeBreakdown.length > 0) {
+      insights.push(`Top travel purpose: "${purposeBreakdown[0]._id}" with ${purposeBreakdown[0].count} entries.`);
     }
-    if (topPurpose) {
-      insights.push(`The most common reason for travel is "${topPurpose._id}", representing ${Math.round((topPurpose.count / validatedCount) * 100)}% of validated trips.`);
+    if (averageMetrics.avgDistance > 0) {
+      insights.push(`Average citizen commute: ${(averageMetrics.avgDistance / 1000).toFixed(1)} km at ${(averageMetrics.avgSpeed || 0).toFixed(1)} km/h.`);
     }
-    if (averageMetrics && averageMetrics.avgDistance > 0) {
-      insights.push(`Citizens commute an average of ${(averageMetrics.avgDistance / 1000).toFixed(1)} km per trip, usually taking around ${(averageMetrics.avgDuration / 60).toFixed(0)} minutes.`);
-    }
-    if (insights.length === 0) insights.push("Collect more trip data to generate automated insights.");
+
+    const activeUsers = await User.countDocuments();
 
     response.status(200).json({
       status: 'success',
@@ -165,6 +201,7 @@ const getAdvancedAnalytics = async (request, response, next) => {
           pending: pendingCount,
           validationRate: totalTrips > 0 ? Math.round((validatedCount / totalTrips) * 100) : 0
         },
+        peakHour: peakHourText,
         purposeBreakdown: purposeBreakdown.map(p => ({ label: p._id, count: p.count })),
         hourlyDistribution: hourlyData,
         averageMetrics: {
@@ -172,7 +209,10 @@ const getAdvancedAnalytics = async (request, response, next) => {
           averageSpeedKmh: parseFloat(averageMetrics.avgSpeed?.toFixed(1) || 0),
           averageDurationMinutes: parseFloat((averageMetrics.avgDuration / 60).toFixed(1))
         },
-        dailyTrends: dailyTrends.map(d => ({ date: d._id, trips: d.count })),
+        recentTrips: anonymizedRecent,
+        carbonSavings: processedCarbon,
+        districtCoverage: processedRegions,
+        activeUsers,
         insights: insights
       }
     });

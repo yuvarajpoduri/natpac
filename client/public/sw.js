@@ -379,7 +379,8 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request).then((response) => {
         // Cache shell URLs
         if (SHELL_URLS.some((u) => url.pathname === u || url.pathname.endsWith(u))) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+          const resClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
         }
         return response;
       }).catch(() => cached || new Response('Offline', { status: 503 }));

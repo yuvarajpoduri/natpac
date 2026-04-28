@@ -3,14 +3,13 @@ import { useAuthentication } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import './LoginPage.css';
 
-const CONSENT_TEXT = `By creating an account on Routelytics, you agree to allow the National Transportation Planning and Research Centre (NATPAC), under KSCSTE, Government of Kerala, to collect your GPS-based travel data through this application. Your data will be:
+const CONSENT_TEXT = `By creating an account on Routelytics, you agree to allow NATPAC to collect your travel data through this application. Your data will be:
 
 • Anonymised before being displayed in the research dashboard
 • Used solely for transportation planning and research purposes
-• Protected by HTTPS/TLS encryption during transmission
-• Stored securely on MongoDB Atlas with access controls
+• Protected and stored securely
 
-You may pause or stop data collection at any time using the Privacy Settings in your account. You may also request deletion of your data by contacting NATPAC.`;
+You may pause or stop data collection at any time using the Privacy Settings in your account.`;
 
 const SignupPage = () => {
   const [fullName, setFullName] = useState('');
@@ -19,6 +18,7 @@ const SignupPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userRole, setUserRole] = useState('citizen');
   const [consentGiven, setConsentGiven] = useState(false);
+  const [showFullConsent, setShowFullConsent] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { registerUser } = useAuthentication();
@@ -138,7 +138,7 @@ const SignupPage = () => {
               />
             </div>
 
-            <div className="input-wrapper">
+            <div className="input-wrapper" style={{ display: 'none' }}>
               <select
                 id="signup-role"
                 className="input-field"
@@ -146,7 +146,6 @@ const SignupPage = () => {
                 onChange={(e) => setUserRole(e.target.value)}
               >
                 <option value="citizen">Citizen User (Data Provider)</option>
-                <option value="scientist">NATPAC Scientist / Planner</option>
               </select>
             </div>
 
@@ -158,9 +157,15 @@ const SignupPage = () => {
               padding: '0.875rem',
               marginBottom: '0.75rem'
             }}>
-              <p style={{ fontSize: '11px', color: '#666', lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-line' }}>
-                {CONSENT_TEXT}
+              <p style={{ fontSize: '11px', color: '#666', lineHeight: 1.6, marginBottom: '0.5rem', whiteSpace: 'pre-line' }}>
+                {showFullConsent ? CONSENT_TEXT : `${CONSENT_TEXT.substring(0, 115)}...`}
               </p>
+              <button 
+                type="button" 
+                onClick={() => setShowFullConsent(!showFullConsent)} 
+                style={{ background: 'none', border: 'none', color: '#111', fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0, marginBottom: '0.75rem', textDecoration: 'underline' }}>
+                {showFullConsent ? 'Show Less' : 'Show Full'}
+              </button>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', cursor: 'pointer' }}>
                 <input
                   id="signup-consent"

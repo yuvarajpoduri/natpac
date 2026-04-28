@@ -12,20 +12,21 @@ import { useAuthentication } from '../context/AuthContext';
 
 /* ─── SVG Donut Chart ─── */
 const DonutChart = ({ segments }) => {
-  const size = 130, cx = 65, cy = 65, r = 48;
+  const size = 160, cx = 80, cy = 80, r = 60;
   const circ = 2 * Math.PI * r;
   let offset = 0;
   return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F0F0F0" strokeWidth={18} />
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block', filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.1))' }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F5F7FA" strokeWidth={24} />
       {segments.map((s, i) => {
         const dash = (s.pct / 100) * circ;
         const el = (
           <circle key={i} cx={cx} cy={cy} r={r} fill="none"
-            stroke={s.color} strokeWidth={18}
+            stroke={s.color} strokeWidth={24}
             strokeDasharray={`${dash} ${circ - dash}`}
             strokeDashoffset={-offset}
-            strokeLinecap="butt"
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 1s ease-out' }}
           />
         );
         offset += dash;
@@ -190,15 +191,15 @@ const QuickAction = ({ to, icon: Icon, title, desc, color }) => {
 const ProgressRow = ({ label, value, color, icon: Icon }) => (
   <div style={{ marginBottom: 20 }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#3333333', fontWeight: 500 }}>
-        {Icon && <Icon size={14} color={color} />} {label}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#333', fontWeight: 600 }}>
+        {Icon && <div style={{ background: `${color}15`, padding: 6, borderRadius: 8 }}><Icon size={16} color={color} /></div>} {label}
       </div>
-      <span style={{ fontSize: 14, fontWeight: 800, color }}>{value}%</span>
+      <span style={{ fontSize: 15, fontWeight: 800, color: '#111' }}>{value}%</span>
     </div>
-    <div style={{ height: 10, background: '#F0F0F0', borderRadius: 99, overflow: 'hidden' }}>
+    <div style={{ height: 12, background: '#F0F4F8', borderRadius: 99, overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
       <div style={{
-        height: '100%', width: `${value}%`, background: `linear-gradient(90deg, ${color}99, ${color})`,
-        borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)',
+        height: '100%', width: `${value}%`, background: `linear-gradient(90deg, ${color}CC, ${color})`,
+        borderRadius: 99, transition: 'width 1.5s cubic-bezier(0.4,0,0.2,1)', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }} />
     </div>
   </div>
@@ -294,47 +295,78 @@ const ScientistDashboard = () => {
       </div>
 
       {/* ── HERO BANNER ── */}
-      <div className="hero-banner">
-        {/* Yellow accent bar */}
-        <div className="hero-accent-bar" />
+      <div className="hero-banner" style={{
+        position: 'relative', overflow: 'hidden', borderRadius: '24px',
+        padding: '3rem', marginBottom: '2rem',
+        background: 'linear-gradient(135deg, #F5F230 0%, #EAB308 100%)',
+        boxShadow: '0 20px 40px -10px rgba(245, 242, 48, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '2rem', color: '#111111'
+      }}>
+        {/* Floating Shapes */}
+        <div style={{
+          position: 'absolute', top: '-10%', right: '10%', width: 250, height: 250,
+          background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)',
+          borderRadius: '50%', pointerEvents: 'none'
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-20%', left: '20%', width: 300, height: 300,
+          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
+          borderRadius: '50%', pointerEvents: 'none'
+        }} />
+        
+        {/* Abstract curve */}
+        <svg style={{ position: 'absolute', right: 0, bottom: 0, opacity: 0.15, pointerEvents: 'none' }} width="400" height="200" viewBox="0 0 400 200">
+          <path d="M0,200 C100,100 300,300 400,0 L400,200 Z" fill="#111111"/>
+        </svg>
 
-        <div className="hero-left">
-          <div className="hero-eyebrow">
-            <span className="hero-dot" />
-            {isCitizen ? 'Live Tracking' : 'Research Platform'}
+        <div style={{ position: 'relative', zIndex: 1, flex: '1 1 400px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'rgba(17,17,17,0.05)', backdropFilter: 'blur(8px)',
+            padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 800,
+            textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16,
+            border: '1px solid rgba(17,17,17,0.1)', color: '#111111'
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444' }}></span>
+            {isCitizen ? 'Live Tracking Enabled' : 'Research & Analytics Hub'}
           </div>
-          <h2 className="hero-title">
-            {isCitizen ? <>Your Travel<br/>Dashboard</> : <>Live Intelligence<br/>Platform</>}
+          
+          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: 12, letterSpacing: '-0.02em', color: '#111111' }}>
+            {isCitizen ? <>Your Travel<br/>Dashboard</> : <>Transport Intelligence<br/>Platform</>}
           </h2>
-          <p className="hero-desc">
+          <p style={{ fontSize: 16, color: '#444444', maxWidth: 500, marginBottom: 28, lineHeight: 1.6, fontWeight: 500 }}>
             {isCitizen
-              ? "Every journey you record shapes Kerala's transport future."
-              : `${tripsCaptured.toLocaleString()} trips · ${districtsCovered}/14 districts · ${aiAccuracy}% AI accuracy`}
+              ? "Every journey you record shapes the future of public transportation and urban mobility."
+              : `Analyzing data across ${districtsCovered} districts to build smarter, sustainable cities.`}
           </p>
-          <div className="hero-actions">
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isCitizen ? (
               <>
-                <HeroBtn to="/simulate" icon={Navigation} primary>Track a Trip</HeroBtn>
-                <HeroBtn to="/diary" icon={BookOpen}>My Diary</HeroBtn>
+                <Link to="/simulate" style={{ padding: '12px 24px', background: '#111111', color: '#F5F230', borderRadius: 99, fontWeight: 700, textDecoration: 'none', fontSize: 15, boxShadow: '0 4px 14px rgba(0,0,0,0.15)', transition: 'transform 0.2s' }} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'} onMouseLeave={e=>e.currentTarget.style.transform='none'}>Track Journey</Link>
+                <Link to="/diary" style={{ padding: '12px 24px', background: 'rgba(17,17,17,0.05)', color: '#111111', border: '1px solid rgba(17,17,17,0.1)', borderRadius: 99, fontWeight: 700, textDecoration: 'none', fontSize: 15, transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background='rgba(17,17,17,0.1)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(17,17,17,0.05)'}>My Diary</Link>
               </>
             ) : (
               <>
-                <HeroBtn to="/analytics" icon={BarChart3} primary>Analytics</HeroBtn>
-                <HeroBtn to="/export" icon={Download}>Export Data</HeroBtn>
+                <Link to="/analytics" style={{ padding: '12px 24px', background: '#111111', color: '#F5F230', borderRadius: 99, fontWeight: 700, textDecoration: 'none', fontSize: 15, boxShadow: '0 4px 14px rgba(0,0,0,0.15)', transition: 'transform 0.2s' }} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'} onMouseLeave={e=>e.currentTarget.style.transform='none'}>View Analytics</Link>
               </>
             )}
           </div>
         </div>
 
-        <div className="hero-stats">
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {[
-            { label: 'Trips Logged', value: tripsCaptured.toLocaleString(), accent: '#F5F230' },
-            { label: 'Active Users',  value: activeCitizens.toLocaleString(), accent: '#5BCAF5' },
-            { label: 'AI Accuracy',   value: `${aiAccuracy}%`,               accent: '#34D399' },
+            { label: 'Trips Logged', value: isCitizen ? recentTrips.length.toLocaleString() : tripsCaptured.toLocaleString() },
+            { label: 'Active Users',  value: activeCitizens.toLocaleString() },
           ].map((s, i) => (
-            <div key={i} className="hero-stat-chip">
-              <span className="hero-stat-value" style={{ color: s.accent }}>{s.value}</span>
-              <span className="hero-stat-label">{s.label}</span>
+            <div key={i} style={{
+              background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.6)', padding: '20px',
+              borderRadius: 20, minWidth: 140, textAlign: 'center',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.05)'
+            }}>
+              <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4, color: '#111111' }}>{s.value}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#444444' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -355,10 +387,9 @@ const ScientistDashboard = () => {
         <>
           {/* 4 stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: '1.75rem' }}>
-            <StatCard label="Trips Recorded" value={tripsCaptured.toLocaleString()} sub="all time" icon={Navigation} color="#5BCAF5" trend="+12%" delay={0} />
+            <StatCard label="Trips Recorded" value={isCitizen ? recentTrips.length.toLocaleString() : tripsCaptured.toLocaleString()} sub="all time" icon={Navigation} color="#5BCAF5" trend="+12%" delay={0} />
             <StatCard label="Active Citizens" value={activeCitizens.toLocaleString()} sub="platform users" icon={Users} color="#34D399" trend="+5%" delay={0.05} />
             <StatCard label="Districts Covered" value={`${districtsCovered}/14`} sub="Kerala coverage" icon={Map} color="#A78BFA" delay={0.1} />
-            <StatCard label="AI Accuracy" value={`${aiAccuracy}%`} sub="mode prediction" icon={Cpu} color="#F5A623" trend="stable" delay={0.15} />
           </div>
 
           {/* Quick actions + recent trips */}
@@ -376,7 +407,6 @@ const ScientistDashboard = () => {
                   <>
                     <QuickAction to="/analytics" icon={BarChart3} title="Deep Analytics" desc="Mode-split, trends & demographics" color="#5BCAF5" />
                     <QuickAction to="/export" icon={Download} title="Export Dataset" desc="Download CSV / JSON" color="#34D399" />
-                    <QuickAction to="/system" icon={ShieldCheck} title="System Health" desc="AI service & server monitor" color="#A78BFA" />
                   </>
                 )}
               </div>
@@ -527,7 +557,6 @@ const ScientistDashboard = () => {
                 { label: 'Trips Logged', value: tripsCaptured.toLocaleString(), icon: Navigation, color: '#5BCAF5' },
                 { label: 'Unique Citizens', value: activeCitizens.toLocaleString(), icon: Users, color: '#34D399' },
                 { label: 'Districts Active', value: `${districtsCovered} / 14`, icon: Map, color: '#A78BFA' },
-                { label: 'AI Accuracy', value: `${aiAccuracy}%`, icon: Zap, color: '#F5A623' },
                 { label: 'CO₂ Tracking', value: 'Active', icon: Leaf, color: '#34D399' },
               ].map((item, i) => {
                 const Icon = item.icon;
@@ -706,7 +735,7 @@ const ScientistDashboard = () => {
               )
             ) : (
               // Scientist map — Kerala heatmap
-              <MapContainer center={[10.5, 76.5]} zoom={7} style={{ width: '100%', height: '100%' }} zoomControl maxBounds={[[8.15, 74.85], [12.85, 77.45]]}>
+              <MapContainer center={[10.5, 76.5]} zoom={7} style={{ width: '100%', height: '100%' }} zoomControl>
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='&copy; CARTO' />
                 {tripNodes.map((node, i) => (
                   <CircleMarker key={i} center={[node.lat, node.lng]} radius={node.radius}

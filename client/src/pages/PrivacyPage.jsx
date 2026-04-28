@@ -41,7 +41,7 @@ const PrivacyPage = () => {
       color: '#5BCAF5',
       title: 'What We Collect',
       points: [
-        'GPS coordinates during active trip recording (start/end points and route path)',
+        'Location data during active trip recording (start/end points and route path)',
         'Trip metadata: speed, duration, distance, and travel mode',
         'User-provided information: trip purpose, companions, and travel cost',
         'Device location access — only when you explicitly start a trip'
@@ -52,7 +52,7 @@ const PrivacyPage = () => {
       color: '#F5F230',
       title: 'How It\'s Used',
       points: [
-        'Powering the AI travel mode prediction model (Random Forest classifier)',
+        'Powering the travel mode prediction system',
         'Generating aggregated transport statistics for Kerala state planning',
         'Identifying travel patterns to support sustainable mobility research',
         'Your personal dashboard and travel diary — visible only to you'
@@ -64,9 +64,9 @@ const PrivacyPage = () => {
       title: 'Anonymization & Security',
       points: [
         'All personal identifiers are separated from trip data in research exports',
-        'Scientist dashboards show only aggregated, never individual, user data',
-        'All data is transmitted over HTTPS and stored with encryption at rest',
-        'Passwords are hashed using bcrypt — we never store plain-text credentials'
+        'Dashboards show only aggregated, never individual, user data',
+        'All data is transmitted and stored securely',
+        'Your account is protected by industry-standard security measures'
       ]
     },
     {
@@ -76,7 +76,7 @@ const PrivacyPage = () => {
       points: [
         'Access your complete trip history anytime via the Travel Diary',
         'Delete your account and all associated data at any time from Profile',
-        'Opt out of AI model training by switching trips to manual-only mode',
+        'Opt out of smart predictions by switching trips to manual-only mode',
         'Request a full data export from the Profile page'
       ]
     }
@@ -114,49 +114,6 @@ const PrivacyPage = () => {
             in Kerala.
           </div>
         </div>
-      </div>
-
-      {/* Tracking Control */}
-      <div className="card" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem',
-        border: isPaused ? '1.5px solid #FCA5A5' : '1.5px solid #86EFAC',
-        background: isPaused ? '#FEF2F2' : '#F0FDF4',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1, minWidth: 200 }}>
-          {isPaused
-            ? <AlertTriangle size={22} color="#E24B4A" style={{ flexShrink: 0, marginTop: 1 }} />
-            : <Shield size={22} color="#16A34A" style={{ flexShrink: 0, marginTop: 1 }} />
-          }
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#111', marginBottom: 3 }}>
-              Data Collection: {isPaused ? '⏸ Paused' : '▶ Active'}
-            </div>
-            <div style={{ fontSize: 13, color: isPaused ? '#991B1B' : '#166534', lineHeight: 1.5 }}>
-              {isPaused
-                ? 'Your GPS data is NOT being collected. Resume anytime to contribute to NATPAC research.'
-                : 'Your journeys are being passively recorded and contributed to NATPAC transport research.'}
-            </div>
-          </div>
-        </div>
-        <button
-          onClick={handleToggleTracking}
-          disabled={isToggling}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 20px', borderRadius: 12,
-            background: isPaused ? '#16A34A' : '#E24B4A',
-            color: '#fff', border: 'none', cursor: isToggling ? 'default' : 'pointer',
-            fontWeight: 700, fontSize: 13, fontFamily: 'inherit',
-            opacity: isToggling ? 0.7 : 1, flexShrink: 0,
-            transition: 'opacity 0.15s',
-          }}
-        >
-          {isPaused
-            ? <><PlayCircle size={16} /> {isToggling ? 'Resuming…' : 'Resume Tracking'}</>
-            : <><PauseCircle size={16} /> {isToggling ? 'Pausing…' : 'Pause Tracking'}</>
-          }
-        </button>
       </div>
 
       {/* Sections */}

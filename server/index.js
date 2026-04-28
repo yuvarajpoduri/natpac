@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectToDatabase = require('./config/database');
+const seedData = require('./seed_function');
 const authenticationRoutes = require('./routes/authenticationRoutes');
 const tripRoutes = require('./routes/tripRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const seedRoutes = require('./routes/seedRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +57,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/seed', seedRoutes);
 
 app.get('/', (request, response) => {
   response.send('NATPAC Travel Data Collection API is running...');

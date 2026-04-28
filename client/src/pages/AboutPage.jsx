@@ -28,13 +28,13 @@ const aboutSections = [
   {
     icon: Database,
     title: 'Real-Time Analytics',
-    description: 'NATPAC Scientists access a live dashboard powered by MongoDB aggregation pipelines. It calculates AI accuracy rates, mode distribution, hourly travel patterns, daily trends, and trip purpose breakdowns — all in real time from actual database records.',
+    description: 'Scientists access a live dashboard powered by MongoDB aggregation pipelines. It calculates mode distribution, hourly travel patterns, daily trends, and trip purpose breakdowns — all in real time from actual database records.',
     accent: 'yellow'
   },
   {
     icon: Shield,
     title: 'Data Privacy & Anonymization',
-    description: 'All exported research data is automatically anonymized. User names and emails are stripped. IDs are hashed. GPS coordinates are truncated to 3 decimal places (~111m precision), protecting residential privacy while maintaining research-grade accuracy.',
+    description: 'All exported research data is automatically anonymized. User names and emails are stripped. IDs are hashed. GPS coordinates are truncated to 3 decimal places (~111m precision), protecting residential privacy while maintaining research-grade reliability.',
     accent: 'blue'
   }
 ];

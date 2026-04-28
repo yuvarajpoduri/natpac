@@ -4,11 +4,15 @@ const {
   getPersonalStats,
   getWeeklySummary,
   getAiAccuracyStats,
-  getFilteredTrips
+  getFilteredTrips,
+  getPublicStats
 } = require('../controllers/analyticsController');
 const authenticationMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// Public endpoint for landing page
+router.get('/public', getPublicStats);
 
 // All analytics routes require authentication
 router.use(authenticationMiddleware);

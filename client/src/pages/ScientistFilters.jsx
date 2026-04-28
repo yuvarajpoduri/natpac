@@ -3,7 +3,7 @@ import axios from 'axios';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
-import { Filter, TrendingUp, Leaf, Navigation } from 'lucide-react';
+import { Filter, TrendingUp, Leaf, Navigation, Clock, Zap, MapPin, Activity } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const token = () => localStorage.getItem('natpac_token');
@@ -57,19 +57,7 @@ const ScientistFilters = () => {
     }
   }, [startDate, endDate, mode, timeOfDay, tripPurpose, minConfidence]);
 
-  // Feature 7: Load AI accuracy on mount
   useEffect(() => {
-    const fetchAiAccuracy = async () => {
-      try {
-        const res = await axios.get(`${API}/api/analytics/ai-accuracy`, {
-          headers: { Authorization: `Bearer ${token()}` }
-        });
-        setAiStats(res.data.data);
-      } catch (e) {
-        console.error('AI accuracy fetch failed', e);
-      }
-    };
-    fetchAiAccuracy();
     fetchFiltered(); // Initial load with no filters
   }, [fetchFiltered]);
 
@@ -90,65 +78,6 @@ const ScientistFilters = () => {
           <p className="page-subtitle">Filter trip data for deep research insights.</p>
         </div>
       </div>
-
-      {/* ── Feature 7: AI Accuracy Panel ── */}
-      {aiStats && (
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 12 }}>
-            <TrendingUp size={16} />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>AI vs User Accuracy</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#111' }}>
-                {aiStats.accuracyPercent !== null ? `${aiStats.accuracyPercent}%` : 'N/A'}
-              </div>
-              <div style={{ fontSize: 12, color: '#888' }}>
-                {aiStats.correctPredictions} correct / {aiStats.totalValidated} validated trips
-              </div>
-            </div>
-
-            {/* Accuracy ring */}
-            <svg width={56} height={56} viewBox="0 0 56 56">
-              <circle cx={28} cy={28} r={22} fill="none" stroke="#f0f0f0" strokeWidth={7} />
-              <circle
-                cx={28} cy={28} r={22} fill="none"
-                stroke="#111" strokeWidth={7}
-                strokeDasharray={`${((aiStats.accuracyPercent || 0) / 100) * 138.2} 138.2`}
-                strokeLinecap="round"
-                transform="rotate(-90 28 28)"
-              />
-            </svg>
-          </div>
-
-          {/* Mode-level breakdown */}
-          {aiStats.modeBreakdown?.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <th style={{ textAlign: 'left', padding: '6px 4px', color: '#888', fontWeight: 500 }}>Mode</th>
-                    <th style={{ textAlign: 'right', padding: '6px 4px', color: '#888', fontWeight: 500 }}>Total</th>
-                    <th style={{ textAlign: 'right', padding: '6px 4px', color: '#888', fontWeight: 500 }}>Correct</th>
-                    <th style={{ textAlign: 'right', padding: '6px 4px', color: '#888', fontWeight: 500 }}>Accuracy</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {aiStats.modeBreakdown.map((m) => (
-                    <tr key={m.mode} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                      <td style={{ padding: '6px 4px', fontWeight: 500 }}>{m.mode}</td>
-                      <td style={{ padding: '6px 4px', textAlign: 'right', color: '#555' }}>{m.total}</td>
-                      <td style={{ padding: '6px 4px', textAlign: 'right', color: '#16A34A' }}>{m.correct}</td>
-                      <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 600 }}>{m.accuracy}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── Filter Controls ── */}
       <div className="card" style={{ marginBottom: '1rem' }}>
@@ -223,18 +152,32 @@ const ScientistFilters = () => {
       {results && (
         <>
           {/* Summary cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
-            {[
-              { icon: Navigation, label: 'Trips', value: results.count, color: '#5BCAF5' },
-              { icon: Filter, label: 'Distance', value: `${results.totalDistanceKm} km`, color: '#F5F230' },
-              { icon: Leaf, label: 'Carbon', value: `${(results.totalCarbonGrams / 1000).toFixed(1)} kg`, color: '#16A34A' }
-            ].map(({ icon: Icon, label, value, color }) => (
-              <div key={label} className="card" style={{ padding: '0.8rem', textAlign: 'center' }}>
-                <Icon size={16} color={color} style={{ margin: '0 auto 4px' }} />
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{value}</div>
-                <div style={{ fontSize: 11, color: '#888' }}>{label}</div>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+            {(() => {
+              const avgDistance = results.count > 0 ? (results.totalDistanceKm / results.count).toFixed(1) : 0;
+              const totalDurationSec = results.trips.reduce((acc, t) => acc + (t.totalDurationSeconds || 0), 0);
+              const avgSpeed = totalDurationSec > 0 ? ((results.totalDistanceKm * 1000) / totalDurationSec * 3.6).toFixed(1) : 0;
+              
+              // Accurate Derived Stats
+              const peakHour = results.peakHour || '—';
+              const activeRegions = new Set(results.trips.map(t => t.originCoordinates?.name).filter(Boolean)).size;
+
+              return [
+                { icon: Navigation, label: 'Total Trips', value: results.count, color: '#5BCAF5' },
+                { icon: Filter, label: 'Total Distance', value: `${results.totalDistanceKm} km`, color: '#F5F230' },
+                { icon: Leaf, label: 'Carbon Saved', value: `${(results.totalCarbonGrams / 1000).toFixed(1)} kg`, color: '#16A34A' },
+                { icon: TrendingUp, label: 'Avg Trip Dist.', value: `${avgDistance} km`, color: '#A78BFA' },
+                { icon: Clock, label: 'Avg Speed', value: `${avgSpeed} km/h`, color: '#FF6B6B' },
+                { icon: Activity, label: 'Peak Travel Hour', value: peakHour, color: '#EC4899' },
+                { icon: MapPin, label: 'Active Regions', value: activeRegions || '—', color: '#14B8A6' }
+              ].map(({ icon: Icon, label, value, color }) => (
+                <div key={label} className="card" style={{ padding: '1rem', textAlign: 'center', borderTop: `3px solid ${color}` }}>
+                  <Icon size={20} color={color} style={{ margin: '0 auto 8px' }} />
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{value}</div>
+                  <div style={{ fontSize: 12, color: '#666', fontWeight: 500 }}>{label}</div>
+                </div>
+              ));
+            })()}
           </div>
 
           {/* Mode split chart */}
@@ -270,7 +213,7 @@ const ScientistFilters = () => {
                 <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      {['Date', 'Mode', 'Distance', 'Purpose', 'Data Score', 'Efficiency', 'Status'].map((h) => (
+                      {['Date', 'Mode', 'Distance', 'Purpose', 'Efficiency', 'Status'].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: '6px 8px', color: '#888', fontWeight: 500 }}>{h}</th>
                       ))}
                     </tr>
@@ -289,9 +232,6 @@ const ScientistFilters = () => {
                         </td>
                         <td style={{ padding: '8px', color: '#555' }}>
                           {trip.tripPurpose || '—'}
-                        </td>
-                        <td style={{ padding: '8px', color: '#555' }}>
-                          {trip.dataConfidenceScore ? `${trip.dataConfidenceScore}%` : '—'}
                         </td>
                         <td style={{ padding: '8px', color: '#555' }}>
                           {trip.efficiencyScore ? `${trip.efficiencyScore}%` : '—'}
